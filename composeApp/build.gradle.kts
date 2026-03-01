@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+
+    // --- LÍNEA NUEVA PARA FIREBASE ---
+    id("com.google.gms.google-services")
 }
 
 kotlin {
@@ -14,7 +17,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -24,7 +27,7 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
@@ -39,6 +42,11 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(compose.materialIconsExtended)
+
+            // --- DEPENDENCIAS NUEVAS PARA FIREBASE MULTIPLATAFORMA ---
+            implementation("dev.gitlive:firebase-auth:1.11.1")
+            implementation("dev.gitlive:firebase-firestore:1.11.1")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -76,4 +84,3 @@ android {
 dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
-

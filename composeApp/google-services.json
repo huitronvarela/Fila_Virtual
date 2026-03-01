@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "385041919843",
+    "project_id": "altoque-c1c87",
+    "storage_bucket": "altoque-c1c87.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:385041919843:android:1d028d9b03c672379fad56",
+        "android_client_info": {
+          "package_name": "com.example.fila_virtual"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDf4swAJflsxnc_TgEoWtKmJsdGMmyBvU8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

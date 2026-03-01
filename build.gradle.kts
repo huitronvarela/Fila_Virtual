@@ -9,4 +9,5 @@ plugins {
 
     // Aquí agregamos el plugin de Google Services para Firebase
     id("com.google.gms.google-services") version "4.4.1" apply false
+    alias(libs.plugins.kotlinSerialization) apply false
 }

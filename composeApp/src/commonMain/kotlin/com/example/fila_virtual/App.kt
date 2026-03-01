@@ -27,6 +27,10 @@ import kotlinx.coroutines.launch
 // Importaciones de Firebase (GitLive)
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.firestore.firestore // <-- Importación de Firestore
+
+// Importación para el empaquetador de datos
+import kotlinx.serialization.Serializable
 
 // Importación de tu logo
 import fila_virtual.composeapp.generated.resources.Res
@@ -38,6 +42,17 @@ object AppColors {
     val darkGray = Color(0xFF333333)
     val foodGreen = Color(0xFF2E7D32)
 }
+
+// --- MODELO DE DATOS DE FIRESTORE ---
+@Serializable
+data class Usuario(
+    val nombre: String,
+    val telefono: String,
+    val email: String,
+    val tipoUsuario: String,
+    val billetera: String = "",
+    val fechaRegistro: String
+)
 
 // --- GESTIÓN DE PANTALLAS ---
 enum class Screens {
@@ -67,11 +82,10 @@ fun App() {
 }
 
 // ====================================================
-// 0. PANTALLA DE INICIO (HOME) - DESPUÉS DEL LOGIN
+// 0. PANTALLA DE INICIO (HOME)
 // ====================================================
 @Composable
 fun HomeScreen(onLogout: () -> Unit) {
-    // CORRECCIÓN: Agregamos el scope para poder cerrar sesión correctamente
     val scope = rememberCoroutineScope()
 
     Column(
@@ -90,7 +104,6 @@ fun HomeScreen(onLogout: () -> Unit) {
 
         Button(
             onClick = {
-                // CORRECCIÓN: Cerramos sesión dentro de una corrutina
                 scope.launch {
                     try {
                         Firebase.auth.signOut()
@@ -212,6 +225,8 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
 fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     val scope = rememberCoroutineScope()
 
+    var nombre by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -224,12 +239,18 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     var errorMessage by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize().background(AppColors.primaryOrange)) {
-        Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            Image(painter = painterResource(Res.drawable.logo), contentDescription = "Logo", modifier = Modifier.size(160.dp))
+        Box(modifier = Modifier.fillMaxWidth().weight(0.8f), contentAlignment = Alignment.Center) {
+            Image(painter = painterResource(Res.drawable.logo), contentDescription = "Logo", modifier = Modifier.size(120.dp))
         }
 
-        Surface(modifier = Modifier.fillMaxWidth().weight(2.5f), shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp), color = Color.White) {
+        Surface(modifier = Modifier.fillMaxWidth().weight(3.2f), shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp), color = Color.White) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+
+                InputField(label = "Nombre Completo", value = nombre, onValueChange = { nombre = it; errorMessage = "" }, placeholder = "Ej. María López")
+                Spacer(modifier = Modifier.height(16.dp))
+
+                InputField(label = "Teléfono", value = telefono, onValueChange = { telefono = it; errorMessage = "" }, placeholder = "Ej. 3141234567")
+                Spacer(modifier = Modifier.height(16.dp))
 
                 InputField(label = "Correo Electrónico", value = email, onValueChange = { email = it; errorMessage = "" }, placeholder = "Ingresa tu correo")
                 Spacer(modifier = Modifier.height(16.dp))
@@ -249,7 +270,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 }
 
                 ActionButton(text = "Registrarse", isLoading = isLoading) {
-                    if (email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+                    if (nombre.isBlank() || telefono.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                         errorMessage = "Por favor llena todos los campos"
                         return@ActionButton
                     }
@@ -270,10 +291,31 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                         isLoading = true
                         errorMessage = ""
                         try {
-                            Firebase.auth.createUserWithEmailAndPassword(email.trim(), password.trim())
+                            // 1. Crear el usuario en Authentication
+                            val authResult = Firebase.auth.createUserWithEmailAndPassword(email.trim(), password.trim())
+                            val uid = authResult.user?.uid
+
+                            if (uid != null) {
+                                // 2. Armar nuestro "paquete" con los datos del usuario
+                                val nuevoUsuario = Usuario(
+                                    nombre = nombre.trim(),
+                                    telefono = telefono.trim(),
+                                    email = email.trim(),
+                                    tipoUsuario = "ALUMNO",
+                                    billetera = "",
+                                    fechaRegistro = "01 de marzo de 2026"
+                                )
+
+                                // 3. Aventarlo a Firestore
+                                Firebase.firestore.collection("usuarios").document(uid).set(nuevoUsuario)
+                            }
+
+                            // 4. Mandarlo a la pantalla de inicio
                             onNavigate(Screens.Home)
+
                         } catch (e: Exception) {
-                            errorMessage = "Error al crear la cuenta. Verifica tus datos."
+                            // AQUÍ ESTÁ EL CAMBIO IMPORTANTE PARA VER EL ERROR:
+                            errorMessage = e.message ?: "Ocurrió un error desconocido."
                             println("Register Error: ${e.message}")
                         } finally {
                             isLoading = false
@@ -281,8 +323,6 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                SocialLoginBlock("f", "G", "a")
                 Spacer(modifier = Modifier.height(24.dp))
                 NavigationLink(textMain = "¿Ya tienes una cuenta? ", textLink = "Inicia sesión") { onNavigate(Screens.Login) }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -292,7 +332,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
 }
 
 // ====================================================
-// COMPONENTES REUTILIZABLES (¡Asegúrate de copiar esto también!)
+// COMPONENTES REUTILIZABLES
 // ====================================================
 
 @Composable

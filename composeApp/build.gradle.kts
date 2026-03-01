@@ -9,6 +9,7 @@ plugins {
 
     // --- LÍNEA NUEVA PARA FIREBASE ---
     id("com.google.gms.google-services")
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -47,6 +48,7 @@ kotlin {
             // --- DEPENDENCIAS NUEVAS PARA FIREBASE MULTIPLATAFORMA ---
             implementation("dev.gitlive:firebase-auth:1.11.1")
             implementation("dev.gitlive:firebase-firestore:1.11.1")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

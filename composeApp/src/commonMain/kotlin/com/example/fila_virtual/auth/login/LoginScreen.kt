@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 // Importaciones de Firebase
 import dev.gitlive.firebase.Firebase
@@ -22,12 +23,11 @@ import dev.gitlive.firebase.auth.auth
 
 // Importaciones de tu Logo
 import fila_virtual.composeapp.generated.resources.Res
-import fila_virtual.composeapp.generated.resources.logo
+import fila_virtual.composeapp.generated.resources.*
 
 // Importaciones de tu nueva arquitectura
-import com.example.fila_virtual.core.theme.AppColors
 import com.example.fila_virtual.core.components.*
-import com.example.fila_virtual.Screens
+import com.example.fila_virtual.core.navigation.Screens
 
 @Composable
 fun LoginScreen(onNavigate: (Screens) -> Unit) {
@@ -41,32 +41,53 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().background(AppColors.primaryOrange)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
         Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
             Image(painter = painterResource(Res.drawable.logo), contentDescription = "Logo", modifier = Modifier.size(160.dp))
         }
 
-        Surface(modifier = Modifier.fillMaxWidth().weight(2.5f), shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp), color = Color.White) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().weight(2.5f), 
+            shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp), 
+            color = MaterialTheme.colorScheme.surface
+        ) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 
-                InputField(label = "Correo Electrónico", value = email, onValueChange = { email = it; errorMessage = "" }, placeholder = "Ingresa tu correo")
+                InputField(
+                    label = stringResource(Res.string.label_email), 
+                    value = email, 
+                    onValueChange = { email = it; errorMessage = "" }, 
+                    placeholder = stringResource(Res.string.placeholder_email)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                PasswordInputField(label = "Contraseña", value = password, onValueChange = { password = it; errorMessage = "" }, passwordVisible = passwordVisible, onVisibilityChange = { passwordVisible = it }, placeholder = "Ingresa tu contraseña")
+                PasswordInputField(
+                    label = stringResource(Res.string.label_password), 
+                    value = password, 
+                    onValueChange = { password = it; errorMessage = "" }, 
+                    passwordVisible = passwordVisible, 
+                    onVisibilityChange = { passwordVisible = it }, 
+                    placeholder = stringResource(Res.string.placeholder_password)
+                )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(text = "¿Olvidaste tu contraseña?", color = AppColors.primaryOrange, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.End).clickable { /* Recuperar contraseña */ })
+                Text(
+                    text = stringResource(Res.string.forgot_password), 
+                    color = MaterialTheme.colorScheme.primary, 
+                    fontWeight = FontWeight.Bold, 
+                    modifier = Modifier.align(Alignment.End).clickable { /* Recuperar contraseña */ }
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                TermsCheckbox(termsAccepted = termsAccepted, onAcceptedChange = { termsAccepted = it })
+                TermsCheckbox(termsAccepted = termsAccepted, onCheckedChange = { termsAccepted = it })
 
                 if (errorMessage.isNotEmpty()) {
-                    Text(text = errorMessage, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp))
+                    Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp))
                 } else {
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                ActionButton(text = "Iniciar sesión", isLoading = isLoading) {
+                ActionButton(text = stringResource(Res.string.btn_login), isLoading = isLoading) {
                     if (email.isBlank() || password.isBlank()) {
                         errorMessage = "Por favor llena todos los campos"
                         return@ActionButton
@@ -92,9 +113,12 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                SocialLoginBlock("f", "G", "a")
+                SocialLoginBlock()
                 Spacer(modifier = Modifier.weight(1f))
-                NavigationLink(textMain = "¿No tienes una cuenta? ", textLink = "Regístrate") { onNavigate(Screens.Register) }
+                NavigationLink(
+                    textMain = stringResource(Res.string.no_account), 
+                    textLink = stringResource(Res.string.btn_register)
+                ) { onNavigate(Screens.Register) }
             }
         }
     }

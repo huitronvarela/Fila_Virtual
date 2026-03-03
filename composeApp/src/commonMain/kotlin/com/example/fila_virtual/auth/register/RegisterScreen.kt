@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 // Importaciones de Firebase
 import dev.gitlive.firebase.Firebase
@@ -23,13 +24,13 @@ import dev.gitlive.firebase.firestore.firestore
 
 // Importaciones de tu Logo
 import fila_virtual.composeapp.generated.resources.Res
-import fila_virtual.composeapp.generated.resources.logo
+import fila_virtual.composeapp.generated.resources.*
 
 // Importaciones de tu nueva arquitectura
-import com.example.fila_virtual.core.theme.AppColors
 import com.example.fila_virtual.core.components.*
-import com.example.fila_virtual.Screens
-import com.example.fila_virtual.Usuario // Traemos tu modelo de datos
+import com.example.fila_virtual.core.data.Usuario
+import com.example.fila_virtual.core.navigation.Screens
+
 
 @Composable
 fun RegisterScreen(onNavigate: (Screens) -> Unit) {
@@ -48,38 +49,79 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().background(AppColors.primaryOrange)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
         Box(modifier = Modifier.fillMaxWidth().weight(0.8f), contentAlignment = Alignment.Center) {
             Image(painter = painterResource(Res.drawable.logo), contentDescription = "Logo", modifier = Modifier.size(120.dp))
         }
 
-        Surface(modifier = Modifier.fillMaxWidth().weight(3.2f), shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp), color = Color.White) {
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+        // Cambiamos Color.White por MaterialTheme.colorScheme.surface para soporte de modo oscuro
+        Surface(
+            modifier = Modifier.fillMaxWidth().weight(3.2f), 
+            shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp), 
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
+                    .verticalScroll(rememberScrollState()), 
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-                InputField(label = "Nombre Completo", value = nombre, onValueChange = { nombre = it; errorMessage = "" }, placeholder = "Ej. María López")
+                InputField(
+                    label = "Nombre Completo", 
+                    value = nombre, 
+                    onValueChange = { nombre = it; errorMessage = "" }, 
+                    placeholder = "Ej. María López"
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                InputField(label = "Teléfono", value = telefono, onValueChange = { telefono = it; errorMessage = "" }, placeholder = "Ej. 3141234567")
+                InputField(
+                    label = "Teléfono", 
+                    value = telefono, 
+                    onValueChange = { telefono = it; errorMessage = "" }, 
+                    placeholder = "Ej. 3141234567"
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                InputField(label = "Correo Electrónico", value = email, onValueChange = { email = it; errorMessage = "" }, placeholder = "Ingresa tu correo")
+                InputField(
+                    label = stringResource(Res.string.label_email), 
+                    value = email, 
+                    onValueChange = { email = it; errorMessage = "" }, 
+                    placeholder = stringResource(Res.string.placeholder_email)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                PasswordInputField(label = "Contraseña", value = password, onValueChange = { password = it; errorMessage = "" }, passwordVisible = passwordVisible, onVisibilityChange = { passwordVisible = it }, placeholder = "Mínimo 6 caracteres")
+                PasswordInputField(
+                    label = stringResource(Res.string.label_password), 
+                    value = password, 
+                    onValueChange = { password = it; errorMessage = "" }, 
+                    passwordVisible = passwordVisible, 
+                    onVisibilityChange = { passwordVisible = it }, 
+                    placeholder = stringResource(Res.string.placeholder_password)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                PasswordInputField(label = "Confirmar Contraseña", value = confirmPassword, onValueChange = { confirmPassword = it; errorMessage = "" }, passwordVisible = confirmPasswordVisible, onVisibilityChange = { confirmPasswordVisible = it }, placeholder = "Confirma tu contraseña")
+                PasswordInputField(
+                    label = "Confirmar Contraseña", 
+                    value = confirmPassword, 
+                    onValueChange = { confirmPassword = it; errorMessage = "" }, 
+                    passwordVisible = confirmPasswordVisible, 
+                    onVisibilityChange = { confirmPasswordVisible = it }, 
+                    placeholder = "Confirma tu contraseña"
+                )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                TermsCheckbox(termsAccepted = termsAccepted, onAcceptedChange = { termsAccepted = it })
+                TermsCheckbox(termsAccepted = termsAccepted, onCheckedChange = { termsAccepted = it })
 
                 if (errorMessage.isNotEmpty()) {
-                    Text(text = errorMessage, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp))
+                    // Usamos el color de error del tema
+                    Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp))
                 } else {
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                ActionButton(text = "Registrarse", isLoading = isLoading) {
+                ActionButton(text = stringResource(Res.string.btn_register), isLoading = isLoading) {
                     if (nombre.isBlank() || telefono.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                         errorMessage = "Por favor llena todos los campos"
                         return@ActionButton
@@ -126,7 +168,10 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                NavigationLink(textMain = "¿Ya tienes una cuenta? ", textLink = "Inicia sesión") { onNavigate(Screens.Login) }
+                NavigationLink(
+                    textMain = stringResource(Res.string.already_have_account), 
+                    textLink = stringResource(Res.string.btn_login)
+                ) { onNavigate(Screens.Login) }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }

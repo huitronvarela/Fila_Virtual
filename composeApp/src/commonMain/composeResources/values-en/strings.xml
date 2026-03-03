@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_title_fila">Virtual </string>
+    <string name="app_title_virtual">Queue</string>
+    <string name="btn_get_started">Get Started</string>
+    <string name="btn_login">Login</string>
+    <string name="btn_register">Sign Up</string>
+    <string name="social_login_label">Sign in with</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="placeholder_email">Enter your email</string>
+    <string name="placeholder_password">Enter your password</string>
+    <string name="forgot_password">Forgot your password?</string>
+    <string name="no_account">Don't have an account? </string>
+    <string name="already_have_account">Already have an account? </string>
+    <string name="terms_accept">I have read and accept the </string>
+    <string name="terms_user_agreement">User Agreement</string>
+    <string name="terms_and"> and the\n</string>
+    <string name="terms_privacy_policy">Privacy Policy</string>
+    <string name="error_fill_fields">Please fill all fields</string>
+</resources>

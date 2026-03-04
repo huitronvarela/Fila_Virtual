@@ -14,28 +14,24 @@ import com.example.fila_virtual.auth.register.RegisterScreen
 import com.example.fila_virtual.auth.splash.SplashScreen
 import com.example.fila_virtual.features.user.home.HomeScreen
 
-// import com.example.fila_virtual.features.splash.SplashScreen
-// import com.example.fila_virtual.features.home.HomeScreen
-
 @Composable
-fun App() {
-    // Aplicamos tu nuevo tema que reacciona al sistema
+fun App(onGoogleSignIn: () -> Unit = {}) {
     FilaVirtualTheme {
-        // Un Surface toma el color de fondo correcto (claro u oscuro)
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             var currentScreen by remember { mutableStateOf(Screens.Splash) }
 
-            // Navegador limpio
             when (currentScreen) {
                 Screens.Splash -> SplashScreen(
                     onGetStarted = { currentScreen = Screens.Login },
-                    onSignUp = { currentScreen = Screens.Register }
+                    onSignUp = { currentScreen = Screens.Register },
+                    onGoogleSignIn = onGoogleSignIn
                 )
                 Screens.Login -> LoginScreen(
-                    onNavigate = { screen -> currentScreen = screen }
+                    onNavigate = { screen -> currentScreen = screen },
+                    onGoogleSignIn = onGoogleSignIn
                 )
                 Screens.Register -> RegisterScreen(
                     onNavigate = { screen -> currentScreen = screen }

@@ -12,10 +12,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 // Importaciones de tus recursos
 import fila_virtual.composeapp.generated.resources.Res
-import fila_virtual.composeapp.generated.resources.logo
+import fila_virtual.composeapp.generated.resources.*
 
 // Importaciones de tu nueva arquitectura
 import com.example.fila_virtual.core.components.ActionButton
@@ -26,7 +27,8 @@ import com.example.fila_virtual.core.theme.TrafficGreen
 @Composable
 fun SplashScreen(
     onGetStarted: () -> Unit,
-    onSignUp: () -> Unit
+    onSignUp: () -> Unit,
+    onGoogleSignIn: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -37,15 +39,13 @@ fun SplashScreen(
         // 1. Título de la app
         Row(modifier = Modifier.padding(top = 16.dp)) {
             Text(
-                text = "Fila ",
-                // Color automático: Negro de día, Blanco de noche
+                text = stringResource(Res.string.app_title_fila),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp
             )
             Text(
-                text = "Virtual",
-                // Usamos el verde de tu semáforo (TrafficGreen)
+                text = stringResource(Res.string.app_title_virtual),
                 color = TrafficGreen,
                 fontWeight = FontWeight.Bold,
                 fontSize = 28.sp
@@ -56,7 +56,7 @@ fun SplashScreen(
 
         // 2. Logo
         Image(
-            painter = painterResource(Res.drawable.logo),
+            painter = painterResource(Res.drawable.logot),
             contentDescription = "Logo",
             modifier = Modifier
                 .fillMaxWidth()
@@ -68,22 +68,22 @@ fun SplashScreen(
 
         // 3. Botón de inicio de sesión / Comenzar
         ActionButton(
-            text = "Comenzar",
+            text = stringResource(Res.string.btn_get_started),
             onClick = onGetStarted,
             isLoading = false
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // 4. Bloque de Redes Sociales (Actualizado: Solo Google y Apple adaptable)
-        SocialLoginBlock()
+        // 4. Bloque de Redes Sociales
+        SocialLoginBlock(onGoogleClick = onGoogleSignIn)
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // 5. Enlace al registro
         NavigationLink(
-            textMain = "¿No tienes una cuenta? ",
-            textLink = "Regístrate",
+            textMain = stringResource(Res.string.no_account),
+            textLink = stringResource(Res.string.btn_register),
             onClick = onSignUp
         )
     }

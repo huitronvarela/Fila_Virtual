@@ -30,6 +30,8 @@ import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.core.components.*
 import com.example.fila_virtual.core.data.Usuario
 import com.example.fila_virtual.core.navigation.Screens
+import com.example.fila_virtual.core.mapFirebaseError
+import com.example.fila_virtual.core.isValidEmail
 
 
 @Composable
@@ -51,10 +53,9 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
         Box(modifier = Modifier.fillMaxWidth().weight(0.8f), contentAlignment = Alignment.Center) {
-            Image(painter = painterResource(Res.drawable.logo), contentDescription = "Logo", modifier = Modifier.size(120.dp))
+            Image(painter = painterResource(Res.drawable.logoblancot), contentDescription = "Logo", modifier = Modifier.size(120.dp))
         }
 
-        // Cambiamos Color.White por MaterialTheme.colorScheme.surface para soporte de modo oscuro
         Surface(
             modifier = Modifier.fillMaxWidth().weight(3.2f), 
             shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp), 
@@ -90,6 +91,12 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                     onValueChange = { email = it; errorMessage = "" }, 
                     placeholder = stringResource(Res.string.placeholder_email)
                 )
+                
+                // UX: Validación visual rápida
+                if (email.isNotEmpty() && !isValidEmail(email)) {
+                    Text("Formato de correo inválido", color = MaterialTheme.colorScheme.error, fontSize = 10.sp, modifier = Modifier.align(Alignment.Start))
+                }
+                
                 Spacer(modifier = Modifier.height(16.dp))
 
                 PasswordInputField(
@@ -115,7 +122,6 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 TermsCheckbox(termsAccepted = termsAccepted, onCheckedChange = { termsAccepted = it })
 
                 if (errorMessage.isNotEmpty()) {
-                    // Usamos el color de error del tema
                     Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp))
                 } else {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -124,6 +130,10 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 ActionButton(text = stringResource(Res.string.btn_register), isLoading = isLoading) {
                     if (nombre.isBlank() || telefono.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                         errorMessage = "Por favor llena todos los campos"
+                        return@ActionButton
+                    }
+                    if (!isValidEmail(email)) {
+                        errorMessage = "Revisa el formato de tu correo"
                         return@ActionButton
                     }
                     if (password != confirmPassword) {
@@ -153,14 +163,15 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                                     email = email.trim(),
                                     tipoUsuario = "ALUMNO",
                                     billetera = "",
-                                    fechaRegistro = "01 de marzo de 2026"
+                                    fechaRegistro = "02 de marzo de 2026"
                                 )
                                 Firebase.firestore.collection("usuarios").document(uid).set(nuevoUsuario)
                             }
                             onNavigate(Screens.Home)
 
                         } catch (e: Exception) {
-                            errorMessage = e.message ?: "Ocurrió un error desconocido."
+                            // UX: Mapeo de errores amigables
+                            errorMessage = mapFirebaseError(e.message)
                         } finally {
                             isLoading = false
                         }

@@ -28,9 +28,14 @@ import fila_virtual.composeapp.generated.resources.*
 // Importaciones de tu nueva arquitectura
 import com.example.fila_virtual.core.components.*
 import com.example.fila_virtual.core.navigation.Screens
+import com.example.fila_virtual.core.mapFirebaseError
+import com.example.fila_virtual.core.isValidEmail
 
 @Composable
-fun LoginScreen(onNavigate: (Screens) -> Unit) {
+fun LoginScreen(
+    onNavigate: (Screens) -> Unit,
+    onGoogleSignIn: () -> Unit = {}
+) {
     val scope = rememberCoroutineScope()
 
     var email by remember { mutableStateOf("") }
@@ -43,7 +48,7 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
         Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            Image(painter = painterResource(Res.drawable.logo), contentDescription = "Logo", modifier = Modifier.size(160.dp))
+            Image(painter = painterResource(Res.drawable.logoblancot), contentDescription = "Logo", modifier = Modifier.size(160.dp))
         }
 
         Surface(
@@ -59,6 +64,12 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
                     onValueChange = { email = it; errorMessage = "" }, 
                     placeholder = stringResource(Res.string.placeholder_email)
                 )
+                
+                // UX: Validación visual rápida del correo
+                if (email.isNotEmpty() && !isValidEmail(email)) {
+                    Text("Formato de correo inválido", color = MaterialTheme.colorScheme.error, fontSize = 10.sp, modifier = Modifier.align(Alignment.Start))
+                }
+                
                 Spacer(modifier = Modifier.height(16.dp))
 
                 PasswordInputField(
@@ -89,7 +100,11 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
 
                 ActionButton(text = stringResource(Res.string.btn_login), isLoading = isLoading) {
                     if (email.isBlank() || password.isBlank()) {
-                        errorMessage = "Por favor llena todos los campos"
+                        errorMessage = "Por favor llena todos los campos" 
+                        return@ActionButton
+                    }
+                    if (!isValidEmail(email)) {
+                        errorMessage = "Revisa el formato de tu correo"
                         return@ActionButton
                     }
                     if (!termsAccepted) {
@@ -104,8 +119,8 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
                             Firebase.auth.signInWithEmailAndPassword(email.trim(), password.trim())
                             onNavigate(Screens.Home)
                         } catch (e: Exception) {
-                            errorMessage = "Error: Correo o contraseña incorrectos."
-                            println("Login Error: ${e.message}")
+                            // UX: Mapeo de errores amigables
+                            errorMessage = mapFirebaseError(e.message)
                         } finally {
                             isLoading = false
                         }
@@ -113,7 +128,7 @@ fun LoginScreen(onNavigate: (Screens) -> Unit) {
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                SocialLoginBlock()
+                SocialLoginBlock(onGoogleClick = onGoogleSignIn)
                 Spacer(modifier = Modifier.weight(1f))
                 NavigationLink(
                     textMain = stringResource(Res.string.no_account), 

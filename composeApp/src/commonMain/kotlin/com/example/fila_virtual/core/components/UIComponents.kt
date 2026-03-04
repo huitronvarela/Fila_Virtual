@@ -123,7 +123,7 @@ fun ActionButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun SocialLoginBlock() {
+fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = {}) {
     Column {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
@@ -138,12 +138,13 @@ fun SocialLoginBlock() {
         }
         Spacer(modifier = Modifier.height(24.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            // Botón de Google usando Vector Drawable
             Box(
                 modifier = Modifier
                     .size(54.dp)
                     .background(MaterialTheme.colorScheme.surface, CircleShape)
                     .border(1.dp, Color.LightGray, CircleShape)
-                    .clickable { /* Lógica Google */ }
+                    .clickable { onGoogleClick() }
                     .padding(12.dp), 
                 contentAlignment = Alignment.Center
             ) {
@@ -155,12 +156,13 @@ fun SocialLoginBlock() {
             
             Spacer(modifier = Modifier.width(24.dp))
             
+            // Botón de Apple adaptable
             Box(
                 modifier = Modifier
                     .size(54.dp)
                     .background(MaterialTheme.colorScheme.surface, CircleShape)
                     .border(1.dp, Color.LightGray, CircleShape)
-                    .clickable { /* Lógica Apple */ }
+                    .clickable { onAppleClick() }
                     .padding(12.dp), 
                 contentAlignment = Alignment.Center
             ) {

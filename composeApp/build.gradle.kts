@@ -33,6 +33,10 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            
+            // --- DEPENDENCIAS NATIVAS ANDROID PARA AUTH ---
+            implementation("com.google.android.gms:play-services-auth:21.0.0")
+            implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -45,7 +49,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(compose.materialIconsExtended)
 
-            // --- DEPENDENCIAS NUEVAS PARA FIREBASE MULTIPLATAFORMA ---
+            // --- DEPENDENCIAS MULTIPLATAFORMA ---
             implementation("dev.gitlive:firebase-auth:1.11.1")
             implementation("dev.gitlive:firebase-firestore:1.11.1")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

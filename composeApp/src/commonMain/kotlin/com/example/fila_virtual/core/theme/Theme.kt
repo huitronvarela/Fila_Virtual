@@ -1,13 +1,11 @@
 package com.example.fila_virtual.core.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Esquema de colores de DÍA
+// Esquema de colores de DÍA (Predeterminado)
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryOrange,
     background = LightBackground,
@@ -18,24 +16,14 @@ private val LightColorScheme = lightColorScheme(
     error = TrafficRed
 )
 
-// Esquema de colores de NOCHE
-private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryOrange,
-    background = DarkBackground,
-    surface = DarkSurface,
-    onPrimary = Color.White,
-    onBackground = Color.White, // Textos blancos automáticamente
-    onSurface = Color.White,
-    error = TrafficRed
-)
-
 @Composable
 fun FilaVirtualTheme(
-    // Esta función detecta automáticamente la configuración del celular
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Forzamos el modo claro por ahora
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    // Por ahora siempre usamos LightColorScheme
+    val colorScheme = LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

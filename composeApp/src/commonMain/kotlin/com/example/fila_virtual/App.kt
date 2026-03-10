@@ -1,19 +1,18 @@
 package com.example.fila_virtual
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
-// Importaciones de tu nueva estructura
+// Importaciones de tu estructura
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.core.navigation.Screens
-import com.example.fila_virtual.auth.animacion.AuthContainer
+import com.example.fila_virtual.auth.animacion.AuthContainer // Asegúrate de que esta ruta sea correcta
 import com.example.fila_virtual.features.user.home.HomeScreen
 
-// Firebase Auth para saber si ya hay una sesión activa
+// Firebase Auth
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
@@ -22,47 +21,49 @@ import kotlinx.coroutines.launch
 @Composable
 fun App(onGoogleSignIn: () -> Unit = {}) {
     FilaVirtualTheme {
-        // Estado para la pantalla actual
-        var currentScreen by remember { mutableStateOf<Screens?>(null) }
+        // Mantenemos tu lógica de inicio persistente
+        val startScreen = remember { if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login }
+        var currentScreen by remember { mutableStateOf(startScreen) }
+
         val scope = rememberCoroutineScope()
 
-        // Observar cambios en el estado de autenticación en tiempo real
+        // FIX PARA GOOGLE: Escuchamos el cambio de sesión
         LaunchedEffect(Unit) {
             Firebase.auth.authStateChanged.collectLatest { user ->
-                currentScreen = if (user != null) {
-                    Screens.Home
-                } else {
-                    Screens.Login
+                // Solo redirigimos automáticamente si el usuario se loguea Y estamos en la pantalla de Login.
+                if (user != null && currentScreen == Screens.Login) {
+                    currentScreen = Screens.Home
                 }
             }
         }
 
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            // Solo mostramos la UI cuando ya sabemos el estado de la sesión (evita saltos)
-            currentScreen?.let { screen ->
-                Crossfade(targetState = screen, label = "NavegacionPrincipal") { targetScreen ->
-                    when (targetScreen) {
-                        Screens.Home -> {
-                            HomeScreen(
-                                onLogout = {
-                                    scope.launch {
-                                        Firebase.auth.signOut()
-                                        // No hace falta cambiar currentScreen aquí, 
-                                        // authStateChanged lo detectará automáticamente.
-                                    }
-                                }
-                            )
-                        }
-                        Screens.Splash -> { /* Tu splash screen si existe */ }
-                        else -> {
-                            AuthContainer(
-                                currentScreen = targetScreen,
-                                onNavigate = { newScreen -> currentScreen = newScreen },
-                                onGoogleSignIn = onGoogleSignIn
-                            )
-                        }
-                    }
+
+            // ¡ELIMINAMOS EL CROSSFADE GLOBAL!
+            // Usamos un simple 'when'. Como Login y Register comparten el mismo bloque,
+            // el AuthContainer no se destruye y la animación de la tarjeta vuelve a funcionar.
+            when (currentScreen) {
+                Screens.Login, Screens.Register -> {
+                    AuthContainer(
+                        currentScreen = currentScreen,
+                        onNavigate = { newScreen -> currentScreen = newScreen },
+                        onGoogleSignIn = onGoogleSignIn
+                    )
                 }
+                Screens.Home -> {
+                    HomeScreen(
+                        onLogout = {
+                            scope.launch {
+                                Firebase.auth.signOut()
+                                currentScreen = Screens.Login
+                            }
+                        }
+                    )
+                }
+                Screens.Splash -> {
+                    /* Aquí iría tu Splash Screen en el futuro */
+                }
+                else -> {}
             }
         }
     }

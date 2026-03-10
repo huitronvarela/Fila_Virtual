@@ -1,5 +1,6 @@
 package com.example.fila_virtual
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -9,36 +10,59 @@ import androidx.compose.ui.Modifier
 // Importaciones de tu nueva estructura
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.core.navigation.Screens
-import com.example.fila_virtual.auth.login.LoginScreen
-import com.example.fila_virtual.auth.register.RegisterScreen
-import com.example.fila_virtual.auth.splash.SplashScreen
+import com.example.fila_virtual.auth.animacion.AuthContainer
 import com.example.fila_virtual.features.user.home.HomeScreen
+
+// Firebase Auth para saber si ya hay una sesión activa
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.auth.auth
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @Composable
 fun App(onGoogleSignIn: () -> Unit = {}) {
     FilaVirtualTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            var currentScreen by remember { mutableStateOf(Screens.Splash) }
+        // Estado para la pantalla actual
+        var currentScreen by remember { mutableStateOf<Screens?>(null) }
+        val scope = rememberCoroutineScope()
 
-            when (currentScreen) {
-                Screens.Splash -> SplashScreen(
-                    onGetStarted = { currentScreen = Screens.Login },
-                    onSignUp = { currentScreen = Screens.Register },
-                    onGoogleSignIn = onGoogleSignIn
-                )
-                Screens.Login -> LoginScreen(
-                    onNavigate = { screen -> currentScreen = screen },
-                    onGoogleSignIn = onGoogleSignIn
-                )
-                Screens.Register -> RegisterScreen(
-                    onNavigate = { screen -> currentScreen = screen }
-                )
-                Screens.Home -> HomeScreen(
-                    onLogout = { currentScreen = Screens.Splash }
-                )
+        // Observar cambios en el estado de autenticación en tiempo real
+        LaunchedEffect(Unit) {
+            Firebase.auth.authStateChanged.collectLatest { user ->
+                currentScreen = if (user != null) {
+                    Screens.Home
+                } else {
+                    Screens.Login
+                }
+            }
+        }
+
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            // Solo mostramos la UI cuando ya sabemos el estado de la sesión (evita saltos)
+            currentScreen?.let { screen ->
+                Crossfade(targetState = screen, label = "NavegacionPrincipal") { targetScreen ->
+                    when (targetScreen) {
+                        Screens.Home -> {
+                            HomeScreen(
+                                onLogout = {
+                                    scope.launch {
+                                        Firebase.auth.signOut()
+                                        // No hace falta cambiar currentScreen aquí, 
+                                        // authStateChanged lo detectará automáticamente.
+                                    }
+                                }
+                            )
+                        }
+                        Screens.Splash -> { /* Tu splash screen si existe */ }
+                        else -> {
+                            AuthContainer(
+                                currentScreen = targetScreen,
+                                onNavigate = { newScreen -> currentScreen = newScreen },
+                                onGoogleSignIn = onGoogleSignIn
+                            )
+                        }
+                    }
+                }
             }
         }
     }

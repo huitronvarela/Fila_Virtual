@@ -7,15 +7,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -32,33 +34,74 @@ import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 
 @Composable
-fun InputField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String) {
+fun InputField(
+    label: String, 
+    value: String, 
+    onValueChange: (String) -> Unit, 
+    placeholder: String,
+    leadingIcon: ImageVector? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    isError: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label, 
-            fontWeight = FontWeight.Bold, 
-            color = MaterialTheme.colorScheme.onBackground, 
-            modifier = Modifier.padding(bottom = 8.dp)
+            fontWeight = FontWeight.SemiBold, 
+            color = Color(0xFF333333), 
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
             value = value, 
             onValueChange = onValueChange, 
-            placeholder = { Text(placeholder, color = Color.Gray) }, 
+            placeholder = { Text(placeholder, color = Color.LightGray) }, 
             modifier = Modifier.fillMaxWidth(), 
             shape = RoundedCornerShape(12.dp), 
-            singleLine = true
+            singleLine = true,
+            isError = isError,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
+            visualTransformation = visualTransformation,
+            leadingIcon = leadingIcon?.let {
+                { Icon(imageVector = it, contentDescription = null) }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color(0xFFE0E0E0),
+                focusedContainerColor = Color(0xFFF9F9F9),
+                unfocusedContainerColor = Color(0xFFF9F9F9),
+                focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                unfocusedLeadingIconColor = Color.Gray,
+                errorLeadingIconColor = MaterialTheme.colorScheme.error,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
         )
     }
 }
 
 @Composable
-fun PasswordInputField(label: String, value: String, onValueChange: (String) -> Unit, passwordVisible: Boolean, onVisibilityChange: (Boolean) -> Unit, placeholder: String) {
+fun PasswordInputField(
+    label: String, 
+    value: String, 
+    onValueChange: (String) -> Unit, 
+    passwordVisible: Boolean, 
+    onVisibilityChange: (Boolean) -> Unit, 
+    placeholder: String,
+    leadingIcon: ImageVector? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    isError: Boolean = false
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label, 
-            fontWeight = FontWeight.Bold, 
-            color = MaterialTheme.colorScheme.onBackground, 
-            modifier = Modifier.padding(bottom = 8.dp)
+            fontWeight = FontWeight.SemiBold, 
+            color = Color(0xFF333333), 
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
             value = value, 
@@ -67,41 +110,67 @@ fun PasswordInputField(label: String, value: String, onValueChange: (String) -> 
             modifier = Modifier.fillMaxWidth(), 
             shape = RoundedCornerShape(12.dp), 
             singleLine = true,
+            isError = isError,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            leadingIcon = leadingIcon?.let {
+                { Icon(imageVector = it, contentDescription = null) }
+            },
             trailingIcon = {
-                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                val description = if (passwordVisible) "Ocultar" else "Mostrar"
+                val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
                 IconButton(onClick = { onVisibilityChange(!passwordVisible) }) { 
-                    Icon(imageVector = image, contentDescription = description, tint = Color.Gray) 
+                    Icon(imageVector = image, contentDescription = null) 
                 }
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color(0xFFE0E0E0),
+                focusedContainerColor = Color(0xFFF9F9F9),
+                unfocusedContainerColor = Color(0xFFF9F9F9),
+                focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                unfocusedLeadingIconColor = Color.Gray,
+                errorLeadingIconColor = MaterialTheme.colorScheme.error,
+                focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
+                unfocusedTrailingIconColor = Color.Gray,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
         )
     }
 }
 
 @Composable
 fun TermsCheckbox(termsAccepted: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(), 
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Checkbox(
             checked = termsAccepted, 
             onCheckedChange = onCheckedChange, 
             colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
         )
         val annotatedString = buildAnnotatedString {
-            withStyle(style = SpanStyle(color = Color.Gray)) { 
+            withStyle(style = SpanStyle(color = Color(0xFF444444))) { 
                 append(stringResource(Res.string.terms_accept)) 
             }
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) { 
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) { 
                 append(stringResource(Res.string.terms_user_agreement)) 
             }
-            withStyle(style = SpanStyle(color = Color.Gray)) { 
+            withStyle(style = SpanStyle(color = Color(0xFF444444))) { 
                 append(stringResource(Res.string.terms_and)) 
             }
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) { 
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) { 
                 append(stringResource(Res.string.terms_privacy_policy)) 
             }
         }
-        Text(text = annotatedString, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp), lineHeight = 18.sp)
+        Text(
+            text = annotatedString, 
+            fontSize = 12.sp, 
+            modifier = Modifier.padding(start = 4.dp), 
+            lineHeight = 16.sp
+        )
     }
 }
 
@@ -109,41 +178,39 @@ fun TermsCheckbox(termsAccepted: Boolean, onCheckedChange: (Boolean) -> Unit) {
 fun ActionButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(50.dp),
+        modifier = Modifier.fillMaxWidth().height(56.dp),
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-        shape = RoundedCornerShape(25.dp),
+        shape = RoundedCornerShape(16.dp),
         enabled = !isLoading
     ) {
         if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
         } else {
-            Text(text = text, fontSize = 18.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+            Text(text = text, fontSize = 16.sp, color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = {}) {
-    Column {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
+            HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
             Text(
                 text = stringResource(Res.string.social_login_label), 
                 modifier = Modifier.padding(horizontal = 16.dp), 
-                color = MaterialTheme.colorScheme.onBackground, 
-                fontWeight = FontWeight.Bold, 
-                fontSize = 14.sp
+                color = Color(0xFF666666), 
+                fontSize = 12.sp
             )
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
+            HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
         }
         Spacer(modifier = Modifier.height(24.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            // Botón de Google usando Vector Drawable
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .border(1.dp, Color.LightGray, CircleShape)
+                    .background(Color.White, CircleShape)
+                    .border(1.dp, Color(0xFFE0E0E0), CircleShape)
                     .clickable { onGoogleClick() }
                     .padding(12.dp), 
                 contentAlignment = Alignment.Center
@@ -156,12 +223,11 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
             
             Spacer(modifier = Modifier.width(24.dp))
             
-            // Botón de Apple adaptable
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .border(1.dp, Color.LightGray, CircleShape)
+                    .background(Color.White, CircleShape)
+                    .border(1.dp, Color(0xFFE0E0E0), CircleShape)
                     .clickable { onAppleClick() }
                     .padding(12.dp), 
                 contentAlignment = Alignment.Center
@@ -169,7 +235,7 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
                 Image(
                     painter = painterResource(Res.drawable.ic_appel_logo),
                     contentDescription = "Apple",
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground)
+                    colorFilter = ColorFilter.tint(Color.Black)
                 )
             }
         }
@@ -177,28 +243,14 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
 }
 
 @Composable
-fun SocialButton(text: String, color: Color) {
-    Box(
-        modifier = Modifier
-            .size(54.dp)
-            .background(MaterialTheme.colorScheme.surface, CircleShape)
-            .border(1.dp, Color.LightGray, CircleShape)
-            .clickable { /* Lógica social */ }, 
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = text, color = color, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
 fun NavigationLink(textMain: String, textLink: String, onClick: () -> Unit) {
-    Row(modifier = Modifier.padding(bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(text = textMain, color = Color.Gray)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text = textMain, color = Color(0xFF444444), fontSize = 14.sp)
         Text(
             text = textLink, 
             color = MaterialTheme.colorScheme.primary, 
             fontWeight = FontWeight.Bold, 
-            fontSize = 16.sp, 
+            fontSize = 14.sp,
             modifier = Modifier.clickable(onClick = onClick).padding(start = 4.dp)
         )
     }

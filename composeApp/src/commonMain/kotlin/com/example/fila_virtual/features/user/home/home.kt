@@ -1,156 +1,158 @@
 package com.example.fila_virtual.features.user.home
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
-
-// Importaciones de Firebase
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.auth.auth
-import dev.gitlive.firebase.firestore.firestore
-
-// Importaciones de datos
 import com.example.fila_virtual.core.data.Usuario
+
+@Composable
+fun HomeView(usuario: Usuario?) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .background(Color.White)
+    ) {
+        HomeHeader(nombre = usuario?.nombre ?: "Bienvenido")
+        SearchBar()
+        SectionHeader(title = "Categorías", actionText = "VER TODAS")
+        CategoryList()
+        Spacer(modifier = Modifier.height(24.dp))
+        SectionHeader(title = "Establecimientos destacados", actionText = "VER TODOS")
+        EstablishmentList()
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun HomeHeader(nombre: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(text = "Hola,", color = Color.Gray, fontSize = 16.sp)
+            Text(text = nombre, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black)
+        }
+        
+        Box {
+            Surface(modifier = Modifier.size(45.dp), shape = CircleShape, color = Color(0xFFF5F5F7)) {
+                Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.padding(10.dp), tint = Color(0xFF2D3436))
+            }
+            Surface(modifier = Modifier.size(18.dp).align(Alignment.TopEnd), shape = CircleShape, color = Color(0xFFFF5722)) {
+                Text("2", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.wrapContentSize(Alignment.Center))
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onLogout: () -> Unit) {
-    val scope = rememberCoroutineScope()
+fun SearchBar() {
+    OutlinedTextField(
+        value = "",
+        onValueChange = {},
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(56.dp),
+        placeholder = { Text("¿Qué se te antoja hoy?", color = Color.Gray) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFF5F5F7),
+            unfocusedContainerColor = Color(0xFFF5F5F7),
+            focusedBorderColor = Color(0xFFFF5722),
+            unfocusedBorderColor = Color.Transparent,
+            cursorColor = Color(0xFFFF5722)
+        )
+    )
+}
 
-    // Estados para manejar la información del usuario
-    var usuario by remember { mutableStateOf<Usuario?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf("") }
-
-    // Descargar datos de Firestore cuando la pantalla se inicie
-    LaunchedEffect(Unit) {
-        val currentUser = Firebase.auth.currentUser
-        if (currentUser != null) {
-            try {
-                // Buscamos en la colección "usuarios" el documento con el UID del usuario
-                val document = Firebase.firestore.collection("usuarios").document(currentUser.uid).get()
-
-                if (document.exists) {
-                    // Deserializamos el documento a tu data class Usuario
-                    usuario = document.data<Usuario>()
-                } else {
-                    errorMessage = "No se encontraron tus datos en el sistema."
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error al cargar datos: ${e.message}"
-            } finally {
-                isLoading = false
-            }
-        } else {
-            errorMessage = "Usuario no autenticado."
-            isLoading = false
-        }
+@Composable
+fun SectionHeader(title: String, actionText: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+        Text(text = actionText, color = Color(0xFFFF5722), fontWeight = FontWeight.Bold, fontSize = 13.sp)
     }
+}
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Fila Virtual", fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.Filled.ExitToApp, contentDescription = "Cerrar sesión", tint = Color.Red)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color(0xFFF5F5F5)),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                isLoading -> {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+@Composable
+fun CategoryList() {
+    val categories = listOf(
+        "Pizza" to Icons.Default.LocalPizza,
+        "Burgers" to Icons.Default.LunchDining,
+        "Sushi" to Icons.Default.SetMeal,
+        "Tacos" to Icons.Default.Fastfood,
+        "Postres" to Icons.Default.Icecream
+    )
+    LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        items(categories) { (name, icon) ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Surface(modifier = Modifier.size(70.dp), shape = RoundedCornerShape(16.dp), color = Color(0xFFFFF1EE)) {
+                    Icon(icon, contentDescription = name, modifier = Modifier.padding(20.dp), tint = Color(0xFFFF5722))
                 }
-                errorMessage.isNotEmpty() -> {
-                    Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
-                }
-                usuario != null -> {
-                    // Diseño de perfil del usuario
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            // Avatar Genérico
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primary)
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = "¡Hola, ${usuario!!.nombre}!",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Divider(color = Color(0xFFEEEEEE))
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Datos traídos de Firestore
-                            UserInfoRow("Correo", usuario!!.email)
-                            UserInfoRow("Teléfono", usuario!!.telefono)
-                            UserInfoRow("Tipo", usuario!!.tipoUsuario)
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = name, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
             }
         }
     }
 }
 
 @Composable
-fun UserInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+fun EstablishmentList() {
+    val places = listOf(
+        Place("La Trattoria Italiana", "4.8", "Pizza · Italiana · $$", Icons.Default.Restaurant),
+        Place("Big Burger Station", "4.6", "Hamburguesas · Americana · $$", Icons.Default.LunchDining),
+        Place("Sakura Sushi House", "4.9", "Sushi · Asiática · $$$", Icons.Default.SetMeal)
+    )
+    places.forEach { place ->
+        EstablishmentCard(place)
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+data class Place(val name: String, val rating: String, val tags: String, val icon: ImageVector)
+
+@Composable
+fun EstablishmentCard(place: Place) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(120.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Text(text = label, color = Color.Gray, fontWeight = FontWeight.Medium)
-        Text(text = value, color = Color.Black, fontWeight = FontWeight.Bold)
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxHeight().width(120.dp).background(Color(0xFFF5F5F7)), contentAlignment = Alignment.Center) {
+                Icon(place.icon, contentDescription = null, modifier = Modifier.size(40.dp), tint = Color.LightGray)
+            }
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
+                Text(text = place.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFFFFB300))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = place.rating, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
+                }
+                Text(text = place.tags, color = Color.Gray, fontSize = 12.sp)
+            }
+        }
     }
 }

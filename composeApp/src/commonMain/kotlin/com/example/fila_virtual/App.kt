@@ -9,8 +9,8 @@ import androidx.compose.ui.Modifier
 // Importaciones de tu estructura
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.core.navigation.Screens
-import com.example.fila_virtual.auth.animacion.AuthContainer // Asegúrate de que esta ruta sea correcta
-import com.example.fila_virtual.features.user.home.HomeScreen
+import com.example.fila_virtual.auth.animacion.AuthContainer
+import com.example.fila_virtual.features.user.MainScreen
 
 // Firebase Auth
 import dev.gitlive.firebase.Firebase
@@ -38,10 +38,7 @@ fun App(onGoogleSignIn: () -> Unit = {}) {
         }
 
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-
-            // ¡ELIMINAMOS EL CROSSFADE GLOBAL!
-            // Usamos un simple 'when'. Como Login y Register comparten el mismo bloque,
-            // el AuthContainer no se destruye y la animación de la tarjeta vuelve a funcionar.
+            // Usamos un simple 'when' para manejar la navegación principal
             when (currentScreen) {
                 Screens.Login, Screens.Register -> {
                     AuthContainer(
@@ -51,7 +48,7 @@ fun App(onGoogleSignIn: () -> Unit = {}) {
                     )
                 }
                 Screens.Home -> {
-                    HomeScreen(
+                    MainScreen(
                         onLogout = {
                             scope.launch {
                                 Firebase.auth.signOut()

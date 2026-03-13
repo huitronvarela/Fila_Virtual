@@ -12,12 +12,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fila_virtual.core.data.Usuario
+import com.example.fila_virtual.data.Usuario
+
+// OJO: Kamel solo funcionará si agregamos la dependencia en build.gradle.kts
+// Por ahora usaremos un placeholder de imagen si no tienes la librería aún.
 
 @Composable
 fun HomeView(usuario: Usuario?) {
@@ -27,7 +31,7 @@ fun HomeView(usuario: Usuario?) {
             .verticalScroll(rememberScrollState())
             .background(Color.White)
     ) {
-        HomeHeader(nombre = usuario?.nombre ?: "Bienvenido")
+        HomeHeader(usuario = usuario)
         SearchBar()
         SectionHeader(title = "Categorías", actionText = "VER TODAS")
         CategoryList()
@@ -39,7 +43,7 @@ fun HomeView(usuario: Usuario?) {
 }
 
 @Composable
-fun HomeHeader(nombre: String) {
+fun HomeHeader(usuario: Usuario?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -49,15 +53,20 @@ fun HomeHeader(nombre: String) {
     ) {
         Column {
             Text(text = "Hola,", color = Color.Gray, fontSize = 16.sp)
-            Text(text = nombre, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black)
+            Text(text = usuario?.nombre ?: "Bienvenido", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black)
         }
         
-        Box {
-            Surface(modifier = Modifier.size(45.dp), shape = CircleShape, color = Color(0xFFF5F5F7)) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.padding(10.dp), tint = Color(0xFF2D3436))
-            }
-            Surface(modifier = Modifier.size(18.dp).align(Alignment.TopEnd), shape = CircleShape, color = Color(0xFFFF5722)) {
-                Text("2", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.wrapContentSize(Alignment.Center))
+        // Foto del usuario en el Home
+        Box(contentAlignment = Alignment.Center) {
+            Surface(
+                modifier = Modifier
+                    .size(45.dp)
+                    .clip(CircleShape)
+                    .clickable { /* Podrías ir al perfil */ },
+                color = Color(0xFFF5F5F7)
+            ) {
+                // Si tienes Kamel, podrías mostrar la imagen real aquí también
+                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(10.dp), tint = Color.Gray)
             }
         }
     }

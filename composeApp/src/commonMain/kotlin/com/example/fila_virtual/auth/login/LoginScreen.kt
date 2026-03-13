@@ -1,6 +1,5 @@
 package com.example.fila_virtual.auth.login
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -20,8 +19,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.fila_virtual.components.ActionButton
+import com.example.fila_virtual.components.InputField
+import com.example.fila_virtual.components.NavigationLink
+import com.example.fila_virtual.components.PasswordInputField
+import com.example.fila_virtual.components.SocialLoginBlock
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 // Importaciones de Firebase
@@ -33,8 +36,7 @@ import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 
 // Importaciones de tu nueva arquitectura
-import com.example.fila_virtual.core.components.*
-import com.example.fila_virtual.core.navigation.Screens
+import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.core.mapFirebaseError
 import com.example.fila_virtual.core.isValidEmail
 

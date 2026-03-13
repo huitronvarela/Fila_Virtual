@@ -1,4 +1,4 @@
-package com.example.fila_virtual.core.navigation
+package com.example.fila_virtual.navigation
 
 enum class Screens {
     Splash,

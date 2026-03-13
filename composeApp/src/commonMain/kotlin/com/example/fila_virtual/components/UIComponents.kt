@@ -1,4 +1,4 @@
-package com.example.fila_virtual.core.components
+package com.example.fila_virtual.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

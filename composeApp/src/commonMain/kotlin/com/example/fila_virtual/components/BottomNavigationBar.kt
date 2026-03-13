@@ -1,4 +1,4 @@
-package com.example.fila_virtual.core.components
+package com.example.fila_virtual.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween

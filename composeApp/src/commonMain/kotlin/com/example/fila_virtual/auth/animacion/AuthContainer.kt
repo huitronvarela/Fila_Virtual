@@ -25,7 +25,7 @@ import org.jetbrains.compose.resources.stringResource
 // Importaciones de tus pantallas
 import com.example.fila_virtual.auth.login.LoginScreen
 import com.example.fila_virtual.auth.register.RegisterScreen
-import com.example.fila_virtual.core.navigation.Screens
+import com.example.fila_virtual.navigation.Screens
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 

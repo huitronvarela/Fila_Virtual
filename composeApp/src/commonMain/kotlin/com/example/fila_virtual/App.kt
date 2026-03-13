@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 
 // Importaciones de tu estructura
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
-import com.example.fila_virtual.core.navigation.Screens
+import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.auth.animacion.AuthContainer
 import com.example.fila_virtual.features.user.MainScreen
 
@@ -19,7 +19,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Composable
-fun App(onGoogleSignIn: () -> Unit = {}) {
+fun App(
+    onGoogleSignIn: () -> Unit = {},
+    onSignOut: () -> Unit = {}
+) {
     FilaVirtualTheme {
         // Mantenemos tu lógica de inicio persistente
         val startScreen = remember { if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login }
@@ -51,14 +54,12 @@ fun App(onGoogleSignIn: () -> Unit = {}) {
                     MainScreen(
                         onLogout = {
                             scope.launch {
-                                Firebase.auth.signOut()
+                                // Llamamos a la función de cierre de sesión que viene de Android
+                                onSignOut()
                                 currentScreen = Screens.Login
                             }
                         }
                     )
-                }
-                Screens.Splash -> {
-                    /* Aquí iría tu Splash Screen en el futuro */
                 }
                 else -> {}
             }

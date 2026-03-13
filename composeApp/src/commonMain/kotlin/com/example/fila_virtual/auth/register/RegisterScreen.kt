@@ -24,6 +24,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.fila_virtual.components.ActionButton
+import com.example.fila_virtual.components.InputField
+import com.example.fila_virtual.components.NavigationLink
+import com.example.fila_virtual.components.PasswordInputField
+import com.example.fila_virtual.components.TermsCheckbox
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -39,9 +44,8 @@ import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 
 // Importaciones de tu nueva arquitectura
-import com.example.fila_virtual.core.components.*
-import com.example.fila_virtual.core.data.Usuario
-import com.example.fila_virtual.core.navigation.Screens
+import com.example.fila_virtual.data.Usuario
+import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.core.*
 
 
@@ -108,14 +112,14 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             )
 
             InputField(
-                label = stringResource(Res.string.label_name), 
-                value = nombre, 
-                onValueChange = { 
+                label = stringResource(Res.string.label_name),
+                value = nombre,
+                onValueChange = {
                     if (isValidName(it)) {
                         nombre = it
-                        errorMessage = "" 
+                        errorMessage = ""
                     }
-                }, 
+                },
                 placeholder = stringResource(Res.string.placeholder_name),
                 leadingIcon = Icons.Filled.Person,
                 keyboardOptions = KeyboardOptions(
@@ -130,14 +134,14 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             InputField(
-                label = stringResource(Res.string.label_phone), 
-                value = telefono, 
-                onValueChange = { 
+                label = stringResource(Res.string.label_phone),
+                value = telefono,
+                onValueChange = {
                     if (it.length <= 10 && it.all { char -> char.isDigit() }) {
                         telefono = it
-                        errorMessage = "" 
+                        errorMessage = ""
                     }
-                }, 
+                },
                 placeholder = stringResource(Res.string.placeholder_phone),
                 leadingIcon = Icons.Filled.Phone,
                 keyboardOptions = KeyboardOptions(
@@ -158,9 +162,9 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             InputField(
-                label = stringResource(Res.string.label_email), 
-                value = email, 
-                onValueChange = { email = it; errorMessage = "" }, 
+                label = stringResource(Res.string.label_email),
+                value = email,
+                onValueChange = { email = it; errorMessage = "" },
                 placeholder = stringResource(Res.string.placeholder_email),
                 leadingIcon = Icons.Filled.Email,
                 keyboardOptions = KeyboardOptions(
@@ -181,11 +185,11 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
 
             val requirements = checkPasswordRequirements(password)
             PasswordInputField(
-                label = stringResource(Res.string.label_password), 
-                value = password, 
-                onValueChange = { password = it; errorMessage = "" }, 
-                passwordVisible = passwordVisible, 
-                onVisibilityChange = { passwordVisible = it }, 
+                label = stringResource(Res.string.label_password),
+                value = password,
+                onValueChange = { password = it; errorMessage = "" },
+                passwordVisible = passwordVisible,
+                onVisibilityChange = { passwordVisible = it },
                 placeholder = stringResource(Res.string.placeholder_password),
                 leadingIcon = Icons.Filled.Lock,
                 keyboardOptions = KeyboardOptions(
@@ -213,11 +217,11 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             PasswordInputField(
-                label = stringResource(Res.string.label_confirm_password), 
-                value = confirmPassword, 
-                onValueChange = { confirmPassword = it; errorMessage = "" }, 
-                passwordVisible = confirmPasswordVisible, 
-                onVisibilityChange = { confirmPasswordVisible = it }, 
+                label = stringResource(Res.string.label_confirm_password),
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it; errorMessage = "" },
+                passwordVisible = confirmPasswordVisible,
+                onVisibilityChange = { confirmPasswordVisible = it },
                 placeholder = stringResource(Res.string.placeholder_confirm_password),
                 leadingIcon = Icons.Filled.Lock,
                 keyboardOptions = KeyboardOptions(
@@ -274,7 +278,10 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                     isLoading = true
                     errorMessage = ""
                     try {
-                        val authResult = Firebase.auth.createUserWithEmailAndPassword(email.trim(), password.trim())
+                        val authResult = Firebase.auth.createUserWithEmailAndPassword(
+                            email.trim(),
+                            password.trim()
+                        )
                         val uid = authResult.user?.uid
 
                         if (uid != null) {
@@ -286,9 +293,10 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                                 billetera = "",
                                 fechaRegistro = "02 de marzo de 2026"
                             )
-                            Firebase.firestore.collection("usuarios").document(uid).set(nuevoUsuario)
+                            Firebase.firestore.collection("usuarios").document(uid)
+                                .set(nuevoUsuario)
                         }
-                        
+
                         isLoading = false
                         isSuccess = true
                         delay(1500)
@@ -302,9 +310,9 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             NavigationLink(
-                textMain = stringResource(Res.string.already_have_account), 
+                textMain = stringResource(Res.string.already_have_account),
                 textLink = stringResource(Res.string.btn_login)
             ) { onNavigate(Screens.Login) }
             Spacer(modifier = Modifier.height(48.dp))

@@ -1,4 +1,4 @@
-package com.example.fila_virtual.core.data
+package com.example.fila_virtual.data
 
 import kotlinx.serialization.Serializable
 
@@ -9,5 +9,6 @@ data class Usuario(
     val email: String,
     val tipoUsuario: String,
     val billetera: String,
-    val fechaRegistro: String
+    val fechaRegistro: String,
+    val fotoUrl: String? = null
 )

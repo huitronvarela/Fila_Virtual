@@ -70,7 +70,6 @@ class MainActivity : ComponentActivity() {
                 if (task.isSuccessful) {
                     val user = firebaseAuth.currentUser
                     user?.let {
-                        // Pasamos la fotoUrl de Google a nuestra función de guardado
                         saveUserToFirestore(it.uid, it.displayName, it.email, it.photoUrl?.toString())
                     }
                     Toast.makeText(this, "Sesión iniciada con Google", Toast.LENGTH_SHORT).show()
@@ -93,9 +92,14 @@ class MainActivity : ComponentActivity() {
                     "tipoUsuario" to "ALUMNO",
                     "billetera" to "",
                     "fechaRegistro" to "02 de marzo de 2026",
-                    "fotoUrl" to photoUrl // <--- GUARDAMOS LA FOTO
+                    "fotoUrl" to photoUrl
                 )
                 userRef.set(userData)
+            } else {
+                // SI YA EXISTE, ACTUALIZAMOS SOLO LA FOTO SI GOOGLE NOS LA DA
+                if (photoUrl != null) {
+                    userRef.update("fotoUrl", photoUrl)
+                }
             }
         }
     }

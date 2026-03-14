@@ -175,7 +175,7 @@ fun LoginScreen(
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { 
-                showBottomSheet = false 
+                showBottomSheet = false
                 recoveryMessage = ""
             },
             sheetState = sheetState,

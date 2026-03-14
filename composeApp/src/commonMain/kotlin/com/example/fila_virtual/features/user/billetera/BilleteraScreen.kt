@@ -14,6 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 @Composable
 fun BilleteraScreen(saldo: String = "$0.00") {
@@ -23,7 +26,7 @@ fun BilleteraScreen(saldo: String = "$0.00") {
             .padding(24.dp)
     ) {
         Text(
-            text = "Mi Billetera",
+            text = stringResource(Res.string.wallet_title),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
@@ -31,7 +34,6 @@ fun BilleteraScreen(saldo: String = "$0.00") {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Tarjeta de Saldo
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -45,7 +47,7 @@ fun BilleteraScreen(saldo: String = "$0.00") {
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(text = "Saldo disponible", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
+                Text(text = stringResource(Res.string.wallet_balance_label), color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
                 Text(text = saldo, color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold)
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -57,17 +59,17 @@ fun BilleteraScreen(saldo: String = "$0.00") {
                     contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFFFF5722))
-                    Text(text = "Recargar Dinero", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
+                    Text(text = stringResource(Res.string.wallet_add_money), color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text(text = "Transacciones recientes", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(text = stringResource(Res.string.wallet_recent_transactions), fontWeight = FontWeight.Bold, fontSize = 18.sp)
         
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = "No hay movimientos recientes", color = Color.Gray)
+            Text(text = stringResource(Res.string.wallet_no_movements), color = Color.Gray)
         }
     }
 }

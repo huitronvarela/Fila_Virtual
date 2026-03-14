@@ -6,8 +6,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-
-    // --- LÍNEA NUEVA PARA FIREBASE ---
     id("com.google.gms.google-services")
     alias(libs.plugins.kotlinSerialization)
 }
@@ -34,10 +32,13 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             
-            // --- DEPENDENCIAS NATIVAS ANDROID PARA AUTH ---
+            // Firebase Nativo Android
             implementation("com.google.android.gms:play-services-auth:21.0.0")
             implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
             implementation("com.google.firebase:firebase-firestore-ktx:24.10.1")
+            
+            // Motor Ktor para Android
+            implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -50,13 +51,17 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(compose.materialIconsExtended)
 
-            // --- DEPENDENCIAS MULTIPLATAFORMA ---
+            // Firebase KMP
             implementation("dev.gitlive:firebase-auth:1.11.1")
             implementation("dev.gitlive:firebase-firestore:1.11.1")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             
-            // --- CARGA DE IMÁGENES (KAMEL) ---
-            implementation("media.kamel:kamel-image:1.0.0")
+            // Imagenes y Red
+            implementation(libs.kamel.image)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.cio) // Motor de reserva
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

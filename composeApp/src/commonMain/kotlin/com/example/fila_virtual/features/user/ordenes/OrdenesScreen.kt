@@ -11,6 +11,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 @Composable
 fun OrdenesScreen() {
@@ -20,7 +23,7 @@ fun OrdenesScreen() {
             .padding(24.dp)
     ) {
         Text(
-            text = "Mis Órdenes",
+            text = stringResource(Res.string.orders_title),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
@@ -28,7 +31,6 @@ fun OrdenesScreen() {
         
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Vista de "No hay órdenes" provisional
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
@@ -42,13 +44,13 @@ fun OrdenesScreen() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Aún no tienes órdenes",
+                text = stringResource(Res.string.orders_empty),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Gray
             )
             Text(
-                text = "¡Pide algo delicioso ahora!",
+                text = stringResource(Res.string.orders_empty_desc),
                 color = Color.LightGray,
                 fontSize = 14.sp
             )

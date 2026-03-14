@@ -19,9 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.data.Usuario
-
-// OJO: Kamel solo funcionará si agregamos la dependencia en build.gradle.kts
-// Por ahora usaremos un placeholder de imagen si no tienes la librería aún.
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 @Composable
 fun HomeView(usuario: Usuario?) {
@@ -33,10 +33,10 @@ fun HomeView(usuario: Usuario?) {
     ) {
         HomeHeader(usuario = usuario)
         SearchBar()
-        SectionHeader(title = "Categorías", actionText = "VER TODAS")
+        SectionHeader(title = stringResource(Res.string.home_categories), actionText = stringResource(Res.string.home_see_all))
         CategoryList()
         Spacer(modifier = Modifier.height(24.dp))
-        SectionHeader(title = "Establecimientos destacados", actionText = "VER TODOS")
+        SectionHeader(title = stringResource(Res.string.home_featured), actionText = stringResource(Res.string.home_see_all_establishments))
         EstablishmentList()
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -52,20 +52,17 @@ fun HomeHeader(usuario: Usuario?) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text(text = "Hola,", color = Color.Gray, fontSize = 16.sp)
-            Text(text = usuario?.nombre ?: "Bienvenido", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black)
+            Text(text = stringResource(Res.string.home_greeting), color = Color.Gray, fontSize = 16.sp)
+            Text(text = usuario?.nombre ?: stringResource(Res.string.home_welcome), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black)
         }
         
-        // Foto del usuario en el Home
         Box(contentAlignment = Alignment.Center) {
             Surface(
                 modifier = Modifier
                     .size(45.dp)
-                    .clip(CircleShape)
-                    .clickable { /* Podrías ir al perfil */ },
+                    .clip(CircleShape),
                 color = Color(0xFFF5F5F7)
             ) {
-                // Si tienes Kamel, podrías mostrar la imagen real aquí también
                 Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(10.dp), tint = Color.Gray)
             }
         }
@@ -79,7 +76,7 @@ fun SearchBar() {
         value = "",
         onValueChange = {},
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(56.dp),
-        placeholder = { Text("¿Qué se te antoja hoy?", color = Color.Gray) },
+        placeholder = { Text(stringResource(Res.string.home_search_placeholder), color = Color.Gray) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
         shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(

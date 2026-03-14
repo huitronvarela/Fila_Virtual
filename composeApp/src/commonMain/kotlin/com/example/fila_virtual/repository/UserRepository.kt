@@ -3,6 +3,7 @@ package com.example.fila_virtual.repository
 import com.example.fila_virtual.data.Usuario
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.firestore.firestore
 
 class UserRepository {
@@ -10,6 +11,9 @@ class UserRepository {
     private val db = Firebase.firestore
 
     fun getCurrentUserUid(): String? = auth.currentUser?.uid
+    
+    // Función nueva para obtener los datos de la sesión activa
+    fun getFirebaseUser(): FirebaseUser? = auth.currentUser
 
     suspend fun getUserData(uid: String): Usuario? {
         return try {

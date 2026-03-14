@@ -21,6 +21,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.Res
+import fila_virtual.composeapp.generated.resources.*
 
 data class NavigationItem(
     val label: String,
@@ -39,14 +42,13 @@ fun BottomNavigationBar(
             .fillMaxWidth()
             .shadow(elevation = 16.dp, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
             .background(Color.White, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp), // Espaciado interno
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         items.forEach { item ->
             val isSelected = selectedIndex == item.index
 
-            // Animación suave de colores
             val color by animateColorAsState(
                 targetValue = if (isSelected) Color(0xFFFF5722) else Color.LightGray,
                 animationSpec = tween(300),
@@ -58,7 +60,7 @@ fun BottomNavigationBar(
                     .weight(1f)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null // Quita el efecto ripple feo al hacer clic
+                        indication = null 
                     ) { onItemSelected(item.index) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -82,10 +84,11 @@ fun BottomNavigationBar(
 }
 
 object NavigationDefaults {
+    @Composable
     fun userItems() = listOf(
-        NavigationItem("INICIO", Icons.Default.Home, 0),
-        NavigationItem("ÓRDENES", Icons.AutoMirrored.Filled.Assignment, 1),
-        NavigationItem("BILLETERA", Icons.Default.AccountBalanceWallet, 2),
-        NavigationItem("PERFIL", Icons.Default.Person, 3)
+        NavigationItem(stringResource(Res.string.nav_home), Icons.Default.Home, 0),
+        NavigationItem(stringResource(Res.string.nav_orders), Icons.AutoMirrored.Filled.Assignment, 1),
+        NavigationItem(stringResource(Res.string.nav_wallet), Icons.Default.AccountBalanceWallet, 2),
+        NavigationItem(stringResource(Res.string.nav_profile), Icons.Default.Person, 3)
     )
 }

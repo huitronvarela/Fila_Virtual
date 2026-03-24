@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -35,9 +37,9 @@ import fila_virtual.composeapp.generated.resources.*
 
 @Composable
 fun InputField(
-    label: String, 
-    value: String, 
-    onValueChange: (String) -> Unit, 
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
     placeholder: String,
     leadingIcon: ImageVector? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
@@ -47,18 +49,18 @@ fun InputField(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = label, 
-            fontWeight = FontWeight.SemiBold, 
-            color = Color(0xFF333333), 
+            text = label,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF333333),
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
-            value = value, 
-            onValueChange = onValueChange, 
-            placeholder = { Text(placeholder, color = Color.LightGray) }, 
-            modifier = Modifier.fillMaxWidth(), 
-            shape = RoundedCornerShape(12.dp), 
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder, color = Color.LightGray) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             singleLine = true,
             isError = isError,
             keyboardOptions = keyboardOptions,
@@ -84,11 +86,11 @@ fun InputField(
 
 @Composable
 fun PasswordInputField(
-    label: String, 
-    value: String, 
-    onValueChange: (String) -> Unit, 
-    passwordVisible: Boolean, 
-    onVisibilityChange: (Boolean) -> Unit, 
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    passwordVisible: Boolean,
+    onVisibilityChange: (Boolean) -> Unit,
     placeholder: String,
     leadingIcon: ImageVector? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
@@ -97,18 +99,18 @@ fun PasswordInputField(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = label, 
-            fontWeight = FontWeight.SemiBold, 
-            color = Color(0xFF333333), 
+            text = label,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF333333),
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
-            value = value, 
-            onValueChange = onValueChange, 
-            placeholder = { Text(placeholder, color = Color.Gray) }, 
-            modifier = Modifier.fillMaxWidth(), 
-            shape = RoundedCornerShape(12.dp), 
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder, color = Color.Gray) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             singleLine = true,
             isError = isError,
             keyboardOptions = keyboardOptions,
@@ -119,8 +121,8 @@ fun PasswordInputField(
             },
             trailingIcon = {
                 val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
-                IconButton(onClick = { onVisibilityChange(!passwordVisible) }) { 
-                    Icon(imageVector = image, contentDescription = null) 
+                IconButton(onClick = { onVisibilityChange(!passwordVisible) }) {
+                    Icon(imageVector = image, contentDescription = null)
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
@@ -141,35 +143,58 @@ fun PasswordInputField(
 }
 
 @Composable
-fun TermsCheckbox(termsAccepted: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun TermsCheckbox(
+    termsAccepted: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onTermsClick: () -> Unit = {},
+    onPrivacyClick: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(), 
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
-            checked = termsAccepted, 
-            onCheckedChange = onCheckedChange, 
+            checked = termsAccepted,
+            onCheckedChange = onCheckedChange,
             colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
         )
+
         val annotatedString = buildAnnotatedString {
-            withStyle(style = SpanStyle(color = Color(0xFF444444))) { 
-                append(stringResource(Res.string.terms_accept)) 
+            withStyle(style = SpanStyle(color = Color(0xFF444444))) {
+                append(stringResource(Res.string.terms_accept))
+                append(" ")
             }
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) { 
-                append(stringResource(Res.string.terms_user_agreement)) 
+
+            pushStringAnnotation(tag = "TERMS", annotation = "terms")
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
+                append(stringResource(Res.string.terms_user_agreement))
             }
-            withStyle(style = SpanStyle(color = Color(0xFF444444))) { 
-                append(stringResource(Res.string.terms_and)) 
+            pop()
+
+            withStyle(style = SpanStyle(color = Color(0xFF444444))) {
+                append(" ")
+                append(stringResource(Res.string.terms_and))
+                append(" ")
             }
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) { 
-                append(stringResource(Res.string.terms_privacy_policy)) 
+
+            pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
+                append(stringResource(Res.string.terms_privacy_policy))
             }
+            pop()
         }
-        Text(
-            text = annotatedString, 
-            fontSize = 12.sp, 
-            modifier = Modifier.padding(start = 4.dp), 
-            lineHeight = 16.sp
+
+        ClickableText(
+            text = annotatedString,
+            style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+            modifier = Modifier.padding(start = 4.dp),
+            onClick = { offset ->
+                annotatedString.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
+                    .firstOrNull()?.let { onTermsClick() }
+
+                annotatedString.getStringAnnotations(tag = "PRIVACY", start = offset, end = offset)
+                    .firstOrNull()?.let { onPrivacyClick() }
+            }
         )
     }
 }
@@ -197,9 +222,9 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
             Text(
-                text = stringResource(Res.string.social_login_label), 
-                modifier = Modifier.padding(horizontal = 16.dp), 
-                color = Color(0xFF666666), 
+                text = stringResource(Res.string.social_login_label),
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = Color(0xFF666666),
                 fontSize = 12.sp
             )
             HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
@@ -212,7 +237,7 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
                     .background(Color.White, CircleShape)
                     .border(1.dp, Color(0xFFE0E0E0), CircleShape)
                     .clickable { onGoogleClick() }
-                    .padding(12.dp), 
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -220,16 +245,16 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
                     contentDescription = "Google"
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(24.dp))
-            
+
             Box(
                 modifier = Modifier
                     .size(54.dp)
                     .background(Color.White, CircleShape)
                     .border(1.dp, Color(0xFFE0E0E0), CircleShape)
                     .clickable { onAppleClick() }
-                    .padding(12.dp), 
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -247,9 +272,9 @@ fun NavigationLink(textMain: String, textLink: String, onClick: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(text = textMain, color = Color(0xFF444444), fontSize = 14.sp)
         Text(
-            text = textLink, 
-            color = MaterialTheme.colorScheme.primary, 
-            fontWeight = FontWeight.Bold, 
+            text = textLink,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
             modifier = Modifier.clickable(onClick = onClick).padding(start = 4.dp)
         )

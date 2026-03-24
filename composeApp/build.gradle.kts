@@ -37,8 +37,10 @@ kotlin {
             // --- DEPENDENCIAS NATIVAS ANDROID PARA AUTH ---
             implementation("com.google.android.gms:play-services-auth:21.0.0")
             implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
+            implementation("com.google.firebase:firebase-firestore-ktx:24.10.0")
         }
         commonMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

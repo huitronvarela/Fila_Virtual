@@ -1,5 +1,6 @@
 [versions]
-agp = "8.13.2"
+kotlinx-datetime = "0.4.1"
+agp = "8.12.2"
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
@@ -15,6 +16,7 @@ kotlin = "2.3.0"
 material3 = "1.10.0-alpha05"
 
 [libraries]
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.5.0" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

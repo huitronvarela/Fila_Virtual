@@ -3,6 +3,8 @@ package com.example.fila_virtual.auth.login
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -79,6 +81,7 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
+            .verticalScroll(rememberScrollState()) // <--- AQUÍ ESTÁ LA MAGIA DEL SCROLL
             .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -97,7 +100,7 @@ fun LoginScreen(
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
-        // --- INPUT DE CORREO ORIGINAL RESTAURADO ---
+        // --- INPUT DE CORREO ---
         InputField(
             label = stringResource(Res.string.label_email),
             value = email,
@@ -120,7 +123,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- INPUT DE CONTRASEÑA ORIGINAL RESTAURADO ---
+        // --- INPUT DE CONTRASEÑA ---
         PasswordInputField(
             label = stringResource(Res.string.label_password),
             value = password,
@@ -146,7 +149,7 @@ fun LoginScreen(
             modifier = Modifier
                 .align(Alignment.End)
                 .padding(top = 8.dp)
-                .clickable { showBottomSheet = true } // ¡Abre el Modal!
+                .clickable { showBottomSheet = true }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -155,7 +158,7 @@ fun LoginScreen(
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
         }
 
-        // --- BOTÓN DE LOGIN ORIGINAL RESTAURADO ---
+        // --- BOTÓN DE LOGIN ---
         ActionButton(text = stringResource(Res.string.btn_login), isLoading = isLoading) {
             if (email.isBlank() || password.isBlank()) {
                 errorMessage = "Por favor llena todos los campos"
@@ -178,7 +181,8 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
         SocialLoginBlock(onGoogleClick = onGoogleSignIn)
 
-        Spacer(modifier = Modifier.weight(1f))
+        // Cambié el weight(1f) por un espacio fijo para que no rompa el scroll
+        Spacer(modifier = Modifier.height(32.dp))
 
         NavigationLink(
             textMain = stringResource(Res.string.no_account),
@@ -244,12 +248,11 @@ fun LoginScreen(
                             }
                             scope.launch {
                                 isRecovering = true
-                                // Llamamos al Repositorio
                                 val enviado = authRepository.sendPasswordResetOtp(recoveryEmail.trim())
 
                                 if (enviado) {
                                     recoveryMessage = ""
-                                    recoveryStep = 2 // Transición chula al paso 2
+                                    recoveryStep = 2
                                 } else {
                                     recoveryMessage = "Error al enviar el código. Revisa tu conexión."
                                 }
@@ -298,12 +301,11 @@ fun LoginScreen(
                             }
                             scope.launch {
                                 isRecovering = true
-                                // Comparamos con la base de datos usando el Repositorio
                                 val esValido = authRepository.verifyOtpCode(recoveryEmail.trim(), inputOtp)
 
                                 if (esValido) {
                                     recoveryMessage = ""
-                                    recoveryStep = 3 // ¡Éxito! Pasamos a la nueva contraseña
+                                    recoveryStep = 3
                                 } else {
                                     recoveryMessage = "Código incorrecto."
                                 }
@@ -365,7 +367,6 @@ fun LoginScreen(
 
                             scope.launch {
                                 isRecovering = true
-                                // Simulamos el éxito visual por ahora
                                 delay(1500)
                                 recoveryMessage = "¡Éxito! Contraseña actualizada."
                                 delay(1000)

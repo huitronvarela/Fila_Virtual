@@ -61,6 +61,43 @@ class AuthRepository {
         }
     }
 
+    // NUEVA FUNCIÓN: Generar código OTP para el REGISTRO
+    suspend fun sendRegistrationOtp(email: String): Boolean {
+        return try {
+            val otpCode = Random.nextInt(100000, 999999).toString()
+            val otpRecord = OtpRecord(code = otpCode, timestamp = Clock.System.now().toEpochMilliseconds())
+
+            Firebase.firestore
+                .collection("otp_codes")
+                .document(email)
+                .set(otpRecord)
+
+            val mailData = MailDocument(
+                to = email,
+                message = MailMessage(
+                    subject = "Verifica tu cuenta - AlToque",
+                    text = "Tu código de verificación es: $otpCode",
+                    html = """
+                        <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+                            <h2 style="color: #333;">Verifica tu identidad</h2>
+                            <p style="color: #555;">Ingresa el siguiente código de 6 dígitos en la aplicación AlToque para completar tu registro:</p>
+                            <div style="background-color: #f4f4f4; padding: 15px; border-radius: 8px; display: inline-block; margin: 10px 0;">
+                                <h1 style="color: #FF5A36; letter-spacing: 5px; margin: 0;">$otpCode</h1>
+                            </div>
+                            <p style="color: #999; font-size: 12px;"><br>Si no fuiste tú, ignora este correo.</p>
+                        </div>
+                    """.trimIndent()
+                )
+            )
+
+            Firebase.firestore.collection("mail").add(mailData)
+            true
+        } catch (e: Exception) {
+            println("Error enviando OTP de registro: ${e.message}")
+            false
+        }
+    }
+
     // Función 2: Validar que el código que escriba el usuario sea el correcto
     suspend fun verifyOtpCode(email: String, inputCode: String): Boolean {
         return try {

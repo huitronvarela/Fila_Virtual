@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,12 +46,14 @@ import com.example.fila_virtual.core.components.*
 import com.example.fila_virtual.core.data.Usuario
 import com.example.fila_virtual.core.navigation.Screens
 import com.example.fila_virtual.core.*
+import com.example.fila_virtual.data.repository.AuthRepository // IMPORTANTE AÑADIR ESTO
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val authRepository = remember { AuthRepository() } // Instancia del repositorio
 
     var nombre by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
@@ -67,9 +71,15 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     // Estado para controlar la animación de éxito
     var isSuccess by remember { mutableStateOf(false) }
 
-    // --- ESTADOS PARA LOS BOTTOM SHEETS (Tarjetas que suben) ---
+    // --- ESTADOS PARA LOS BOTTOM SHEETS LEGALES ---
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var showTermsAndConditions by remember { mutableStateOf(false) }
+
+    // --- NUEVOS ESTADOS PARA EL OTP ---
+    var showOtpSheet by remember { mutableStateOf(false) }
+    var otpCode by remember { mutableStateOf("") }
+    var isVerifyingOtp by remember { mutableStateOf(false) }
+    var otpErrorMessage by remember { mutableStateOf("") }
 
     // DIBUJAMOS EL FORMULARIO DE REGISTRO NORMAL
     Surface(
@@ -80,7 +90,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .navigationBarsPadding() // CORRECCIÓN: Evita el choque con la barra de Android
+                .navigationBarsPadding()
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -246,8 +256,8 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             TermsCheckbox(
                 termsAccepted = termsAccepted,
                 onCheckedChange = { termsAccepted = it },
-                onTermsClick = { showTermsAndConditions = true }, // Abre la tarjeta de Términos
-                onPrivacyClick = { showPrivacyPolicy = true }     // Abre la tarjeta de Privacidad
+                onTermsClick = { showTermsAndConditions = true },
+                onPrivacyClick = { showPrivacyPolicy = true }
             )
 
             if (errorMessage.isNotEmpty()) {
@@ -256,6 +266,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
+            // --- MODIFICADO: EL BOTÓN AHORA ENVÍA EL OTP EN LUGAR DE REGISTRAR DIRECTO ---
             ActionButton(text = stringResource(Res.string.btn_register), isLoading = isLoading) {
                 if (nombre.isBlank() || telefono.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                     errorMessage = "Por favor llena todos los campos"
@@ -282,33 +293,19 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                     return@ActionButton
                 }
 
+                // Disparamos el envío del OTP
                 scope.launch {
                     isLoading = true
                     errorMessage = ""
-                    try {
-                        val authResult = Firebase.auth.createUserWithEmailAndPassword(email.trim(), password.trim())
-                        val uid = authResult.user?.uid
+                    val otpSent = authRepository.sendRegistrationOtp(email.trim())
+                    isLoading = false
 
-                        if (uid != null) {
-                            val nuevoUsuario = Usuario(
-                                nombre = nombre.trim(),
-                                telefono = telefono.trim(),
-                                email = email.trim(),
-                                tipoUsuario = "ALUMNO",
-                                billetera = "",
-                                fechaRegistro = "14 de marzo de 2026"
-                            )
-                            Firebase.firestore.collection("usuarios").document(uid).set(nuevoUsuario)
-                        }
-
-                        isLoading = false
-                        isSuccess = true
-                        delay(1500)
-                        onNavigate(Screens.Home)
-
-                    } catch (e: Exception) {
-                        errorMessage = mapFirebaseError(e.message)
-                        isLoading = false
+                    if (otpSent) {
+                        otpCode = "" // Limpiamos si había algo antes
+                        otpErrorMessage = ""
+                        showOtpSheet = true // Levantamos el BottomSheet
+                    } else {
+                        errorMessage = "Error al enviar el código de verificación. Intenta de nuevo."
                     }
                 }
             }
@@ -320,7 +317,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 textLink = stringResource(Res.string.btn_login)
             ) { onNavigate(Screens.Login) }
 
-            Spacer(modifier = Modifier.height(48.dp)) // Espacio final para que el scroll libere el botón
+            Spacer(modifier = Modifier.height(48.dp))
         }
 
         // Vista de éxito
@@ -356,47 +353,11 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
         }
     }
 
-    // --- LÓGICA DE LOS BOTTOM SHEETS ---
-
+    // --- LÓGICA DE LOS BOTTOM SHEETS LEGALES (SIN CAMBIOS) ---
     if (showPrivacyPolicy) {
         LegalBottomSheet(
             title = "Aviso de Privacidad",
-            content = """
-                En estricto cumplimiento a lo establecido por la Ley Federal de Protección de Datos
-                Personales en Posesión de los Particulares, su Reglamento y los Lineamientos del
-                Aviso de Privacidad vigentes en los Estados Unidos Mexicanos (en adelante, la
-                "Legislación Vigente"), AlToque S.A. de C.V., con domicilio legal ubicado en
-                Carretera Manzanillo-Cihuatlán Km. 20, C.P. 28860, Manzanillo, Colima (en
-                adelante, el "Responsable"), es el responsable del uso, tratamiento, confidencialidad
-                y protección de sus datos personales recabados a través de la aplicación móvil
-                denominada "AlToque", disponible para dispositivos con sistemas operativos iOS
-                y Android, así como de cualquier entorno digital, portal web o servicio asociado a la
-                misma (en adelante y de manera conjunta, la "Plataforma").
-                
-                1. Datos Personales Recabados
-                Para llevar a cabo las finalidades descritas en el presente aviso, utilizaremos los siguientes datos personales:
-                • Nombre completo.
-                • Correo electrónico.
-                • Número de teléfono celular.
-                • Imagen y datos contenidos en su Identificación Oficial vigente (INE).
-                • Datos patrimoniales y/o financieros (información de tarjetas de crédito o débito, procesados de manera segura exclusivamente a través de proveedores autorizados).
-                
-                2. Finalidades del Tratamiento de Datos
-                Los datos personales recabados serán utilizados para las siguientes finalidades primarias, las cuales son necesarias para el servicio que solicita:
-                • Registro, creación y administración de su cuenta de usuario en la Plataforma.
-                • Procesamiento de pagos a través de la pasarela electrónica.
-                • Gestión, seguimiento y notificación de sus pedidos de alimentos y su posición en AlToque.
-                • Validación de identidad y prevención de fraudes, suplantación de identidad, pedidos falsos o mal uso de la Plataforma.
-                
-                3. Transferencia de Datos a Terceros
-                El Responsable se compromete a no comercializar ni vender su información personal. Sus datos únicamente podrán ser compartidos con los siguientes terceros, bajo estrictas medidas de seguridad, para garantizar el funcionamiento de la Plataforma:
-                • Proveedores de Infraestructura Tecnológica (ej. Google Firebase).
-                • Proveedores de Procesamiento de Pagos (ej. PayPal).
-                • Establecimientos Afiliados.
-                
-                4. Ejercicio de Derechos ARCO
-                Usted tiene derecho a conocer qué datos personales tenemos de usted, para qué los utilizamos y las condiciones del uso que les damos (Acceso). Asimismo, es su derecho solicitar la corrección de su información personal en caso de que esté desactualizada, sea inexacta o incompleta (Rectificación); que la eliminemos de nuestros registros o bases de datos (Cancelación); así como oponerse al uso de sus datos personales para fines específicos (Oposición). Para el ejercicio de cualquiera de los derechos ARCO, deberá enviar una solicitud respectiva al correo electrónico oficial: ggutierrez0@ucol.mx.
-            """.trimIndent(),
+            content = "...", // Aquí va tu texto original que acorté para no hacer gigante el bloque, pégalo de vuelta
             onDismiss = { showPrivacyPolicy = false }
         )
     }
@@ -404,120 +365,193 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     if (showTermsAndConditions) {
         LegalBottomSheet(
             title = "Términos y Condiciones",
-            content = """
-                1. Aceptación de los Términos y Restricción de Edad
-                El acceso y uso de la Plataforma "AlToque" atribuye la condición de Usuario e implica la aceptación plena y sin reservas de todas y cada una de las disposiciones incluidas en este documento. Debido a la necesidad legal de validar la identidad mediante identificación oficial (INE) y la realización de transacciones electrónicas, el uso de esta Plataforma está estrictamente limitado a personas mayores de 18 años.
-                
-                2. Mecánica de Pedidos y Pagos
-                La Plataforma opera bajo un modelo de servicio automatizado y pago anticipado. Todo pedido realizado a través de "Fila Virtual" deberá ser liquidado en su totalidad al momento de solicitarlo, mediante las pasarelas de pago integradas en la aplicación (PayPal). No se aceptarán pagos en efectivo en la sucursal para los pedidos gestionados a través de la Plataforma.
-                
-                3. Políticas de Cancelación, Tolerancia y Reembolsos
-                Debido a la naturaleza perecedera de los bienes comercializados (alimentos y bebidas preparados bajo demanda), no procederá ningún tipo de reembolso monetario una vez que el pago ha sido procesado exitosamente y el pedido ha entrado en la cola de producción del establecimiento.
-                • Tolerancia por Retraso: Si el Usuario no se presenta en la sucursal al momento de ser notificado que su turno o pedido está listo, el producto quedará a resguardo del establecimiento hasta su horario de cierre del día en curso.
-                • Inasistencia Total: En caso de que el Usuario no recoja su pedido antes del cierre de operaciones del día, el producto se considerará entregado/mermado y no habrá devolución del importe pagado.
-                
-                4. Tiempos de Espera y Límites de Responsabilidad
-                "AlToque" opera exclusivamente como un intermediario tecnológico de gestión de turnos y pagos entre el Usuario y el Establecimiento de consumo.
-                • Los tiempos de espera mostrados en la Plataforma son estimaciones.
-                • Cualquier compensación derivada de demoras excepcionales en la preparación de los alimentos será responsabilidad exclusiva del establecimiento.
-                
-                5. Conducta del Usuario y Sanciones Administrativas
-                El Usuario se obliga a utilizar la Plataforma de manera lícita, ética y de buena fe. Queda estrictamente prohibido apartar lugares sin intención de compra, realizar pedidos falsos, entorpecer el dinamismo de la fila virtual, o realizar cualquier acto que altere el funcionamiento del software.
-                
-                6. Jurisdicción y Legislación Aplicable
-                Para la interpretación, cumplimiento y ejecución de los presentes Términos y Condiciones, así como para la resolución de cualquier controversia que pudiera suscitarse, las partes se someten expresamente a las leyes federales de los Estados Unidos Mexicanos y a la jurisdicción de los tribunales competentes en el Estado de Colima.
-            """.trimIndent(),
+            content = "...", // Aquí va tu texto original
             onDismiss = { showTermsAndConditions = false }
         )
     }
-}
 
-@Composable
-fun PasswordRequirementItem(text: String, isMet: Boolean) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 2.dp)
-    ) {
-        Icon(
-            imageVector = if (isMet) Icons.Filled.CheckCircle else Icons.Filled.Circle,
-            contentDescription = null,
-            tint = if (isMet) Color(0xFF2E7D32) else Color.LightGray,
-            modifier = Modifier.size(14.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            color = if (isMet) Color(0xFF2E7D32) else Color.Gray
+    // --- NUEVO: BOTTOM SHEET DEL OTP ---
+    if (showOtpSheet) {
+        OtpBottomSheet(
+            email = email,
+            otpCode = otpCode,
+            onOtpChange = {
+                if (it.length <= 6 && it.all { char -> char.isDigit() }) {
+                    otpCode = it
+                    otpErrorMessage = ""
+                }
+            },
+            isVerifying = isVerifyingOtp,
+            errorMessage = otpErrorMessage,
+            onVerifyClick = {
+                if (otpCode.length < 6) {
+                    otpErrorMessage = "Ingresa los 6 dígitos"
+                    return@OtpBottomSheet
+                }
+
+                scope.launch {
+                    isVerifyingOtp = true
+                    val isValid = authRepository.verifyOtpCode(email.trim(), otpCode)
+
+                    if (isValid) {
+                        // CÓDIGO CORRECTO: AHORA SÍ CREAMOS LA CUENTA
+                        try {
+                            val authResult = Firebase.auth.createUserWithEmailAndPassword(email.trim(), password.trim())
+                            val uid = authResult.user?.uid
+
+                            if (uid != null) {
+                                val nuevoUsuario = Usuario(
+                                    nombre = nombre.trim(),
+                                    telefono = telefono.trim(),
+                                    email = email.trim(),
+                                    tipoUsuario = "ALUMNO",
+                                    billetera = "",
+                                    fechaRegistro = "30 de marzo de 2026" // O usa Clock.System si prefieres
+                                )
+                                Firebase.firestore.collection("usuarios").document(uid).set(nuevoUsuario)
+                            }
+
+                            showOtpSheet = false
+                            isVerifyingOtp = false
+                            isSuccess = true
+                            delay(1500)
+                            onNavigate(Screens.Home)
+
+                        } catch (e: Exception) {
+                            showOtpSheet = false
+                            isVerifyingOtp = false
+                            errorMessage = mapFirebaseError(e.message) // Muestra el error de Firebase en la pantalla principal
+                        }
+                    } else {
+                        isVerifyingOtp = false
+                        otpErrorMessage = "Código incorrecto o expirado"
+                    }
+                }
+            },
+            onCancelClick = {
+                showOtpSheet = false
+                otpCode = ""
+            }
         )
     }
 }
 
-// --- COMPONENTE BOTTOM SHEET REUTILIZABLE ---
+// ... (Aquí mantén tu función PasswordRequirementItem intacta)
+@Composable
+fun PasswordRequirementItem(text: String, isMet: Boolean) { /* Tu código original */ }
+
+// ... (Aquí mantén tu función LegalBottomSheet intacta)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LegalBottomSheet(
-    title: String,
-    content: String,
-    onDismiss: () -> Unit
+fun LegalBottomSheet(title: String, content: String, onDismiss: () -> Unit) { /* Tu código original */ }
+
+
+// --- NUEVO COMPONENTE: DISEÑO DEL OTP IDÉNTICO A TU IMAGEN ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OtpBottomSheet(
+    email: String,
+    otpCode: String,
+    onOtpChange: (String) -> Unit,
+    isVerifying: Boolean,
+    errorMessage: String,
+    onVerifyClick: () -> Unit,
+    onCancelClick: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope() // <--- Agregamos esto para la animación
+    val focusManager = LocalFocusManager.current
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onCancelClick,
         sheetState = sheetState,
-        containerColor = Color.White
+        containerColor = Color.White,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding() // CORRECCIÓN: Evita el choque del botón cerrar con el sistema
+                .navigationBarsPadding()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Título
             Text(
-                text = title,
-                fontSize = 22.sp,
+                text = "Verifica tu identidad",
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
-                modifier = Modifier.padding(bottom = 16.dp),
-                textAlign = TextAlign.Center
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // Caja de texto con scroll
-            Box(
-                modifier = Modifier
-                    .weight(1f, fill = false)
-            ) {
+            Text(
+                text = "Ingresa el código de 6 dígitos enviado a:",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = email,
+                fontSize = 14.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
+
+            // Input estilo "caja grande" con espaciado
+            OutlinedTextField(
+                value = otpCode,
+                onValueChange = onOtpChange,
+                modifier = Modifier.fillMaxWidth().height(68.dp),
+                textStyle = TextStyle(
+                    fontSize = 28.sp,
+                    letterSpacing = 16.sp, // Esto hace que los números se separen como en tu foto
+                    textAlign = TextAlign.Center
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.NumberPassword,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                ),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.LightGray,
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                ),
+                singleLine = true
+            )
+
+            if (errorMessage.isNotEmpty()) {
                 Text(
-                    text = content,
-                    fontSize = 14.sp,
-                    color = Color.DarkGray,
-                    lineHeight = 20.sp,
-                    textAlign = TextAlign.Justify, // CORRECCIÓN: Justificado para que se vea como documento legal pro
-                    modifier = Modifier.verticalScroll(rememberScrollState())
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
+            } else {
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Botón con animación de bajada
             ActionButton(
-                text = "Cerrar",
-                isLoading = false,
-                onClick = {
-                    // Primero animamos hacia abajo y luego cerramos
-                    scope.launch {
-                        sheetState.hide()
-                        onDismiss()
-                    }
-                }
+                text = "Verificar Código",
+                isLoading = isVerifying,
+                onClick = onVerifyClick
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "¿No lo recibiste? Cancelar e intentar de nuevo",
+                color = MaterialTheme.colorScheme.primary, // Naranja
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .clickable { onCancelClick() }
+                    .padding(8.dp)
+            )
         }
     }
 }

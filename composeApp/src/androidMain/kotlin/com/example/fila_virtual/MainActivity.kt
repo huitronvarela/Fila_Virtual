@@ -57,9 +57,13 @@ class MainActivity : ComponentActivity() {
             try {
                 val account = task.getResult(ApiException::class.java)!!
                 firebaseAuthWithGoogle(account.idToken!!)
-            } catch (e: ApiException) {
-                Toast.makeText(this, "Error de Google: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            }  catch (e: ApiException) {
+            // ESTO es lo que verás en el Logcat ahora:
+            android.util.Log.e("GOOGLE_DEBUG", "Error Code: ${e.statusCode}")
+            android.util.Log.e("GOOGLE_DEBUG", "Causa: ${android.util.Log.getStackTraceString(e)}")
+
+                Toast.makeText(this, "ERROR GOOGLE: ${e.statusCode}", Toast.LENGTH_LONG).show()
+        }
         }
     }
 

@@ -4,5 +4,7 @@ enum class Screens {
     Splash,
     Login,
     Register,
-    Home
+    Home,
+    Privacy,
+    Terms
 }

@@ -6,6 +6,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
+
 // Importaciones de tu estructura
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.navigation.Screens

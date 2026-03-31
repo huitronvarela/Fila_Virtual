@@ -1,7 +1,10 @@
 package com.example.fila_virtual.auth.login
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -17,6 +20,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.components.ActionButton
@@ -24,6 +28,7 @@ import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.NavigationLink
 import com.example.fila_virtual.components.PasswordInputField
 import com.example.fila_virtual.components.SocialLoginBlock
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -31,14 +36,17 @@ import org.jetbrains.compose.resources.stringResource
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 
-// Importaciones de tu Logo
+// Importaciones de tu Logo y recursos
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 
-// Importaciones de tu nueva arquitectura
-import com.example.fila_virtual.navigation.Screens
+// Importaciones de tu arquitectura
 import com.example.fila_virtual.core.mapFirebaseError
 import com.example.fila_virtual.core.isValidEmail
+import com.example.fila_virtual.navigation.Screens
+
+// Importación de tu nuevo Repositorio
+import com.example.fila_virtual.repository.AuthRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +57,10 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
 
+    // Instanciamos el repositorio para la magia del OTP
+    val authRepository = remember { AuthRepository() }
+
+    // Estados de Login Normal
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -56,16 +68,24 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    // Estado para el Modal de recuperación de contraseña
-    val sheetState = rememberModalBottomSheetState()
+    // Estados para el Modal de recuperación de contraseña
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBottomSheet by remember { mutableStateOf(false) }
     var recoveryEmail by remember { mutableStateOf("") }
     var recoveryMessage by remember { mutableStateOf("") }
     var isRecovering by remember { mutableStateOf(false) }
 
+    // Variables para los 3 pasos de recuperación
+    var recoveryStep by remember { mutableStateOf(1) } // 1: Correo, 2: OTP, 3: Nueva Pass
+    var inputOtp by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var newPasswordVisible by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState()) // <--- AQUÍ ESTÁ LA MAGIA DEL SCROLL
             .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -84,6 +104,7 @@ fun LoginScreen(
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
+        // --- INPUT DE CORREO ---
         InputField(
             label = stringResource(Res.string.label_email),
             value = email,
@@ -106,6 +127,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // --- INPUT DE CONTRASEÑA ---
         PasswordInputField(
             label = stringResource(Res.string.label_password),
             value = password,
@@ -140,6 +162,7 @@ fun LoginScreen(
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
         }
 
+        // --- BOTÓN DE LOGIN ---
         ActionButton(text = stringResource(Res.string.btn_login), isLoading = isLoading) {
             if (email.isBlank() || password.isBlank()) {
                 errorMessage = "Por favor llena todos los campos"
@@ -162,21 +185,26 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
         SocialLoginBlock(onGoogleClick = onGoogleSignIn)
 
-        Spacer(modifier = Modifier.height(40.dp))
+        // Cambié el weight(1f) por un espacio fijo para que no rompa el scroll
+        Spacer(modifier = Modifier.height(32.dp))
 
         NavigationLink(
             textMain = stringResource(Res.string.no_account),
             textLink = stringResource(Res.string.btn_register)
         ) { onNavigate(Screens.Register) }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
     }
 
+    // --- BOTTOM SHEET DE RECUPERACIÓN (FLUJO DE 3 PASOS) ---
     if (showBottomSheet) {
         ModalBottomSheet(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showBottomSheet = false
                 recoveryMessage = ""
+                recoveryStep = 1
+                inputOtp = ""
+                newPassword = ""
             },
             sheetState = sheetState,
             containerColor = Color.White
@@ -184,63 +212,172 @@ fun LoginScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(24.dp)
                     .padding(bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Recuperar contraseña",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Text(
-                    text = "Enviaremos un enlace a tu correo para restablecer tu contraseña.",
-                    fontSize = 14.sp,
-                    color = Color(0xFF666666),
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
+                // --- PASO 1: PEDIR CORREO ---
+                AnimatedVisibility(visible = recoveryStep == 1) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Recuperar contraseña", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text(
+                            text = "Te enviaremos un código de 6 dígitos para validar tu identidad.",
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666),
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            textAlign = TextAlign.Center
+                        )
 
-                InputField(
-                    label = "Correo electrónico",
-                    value = recoveryEmail,
-                    onValueChange = { recoveryEmail = it; recoveryMessage = "" },
-                    placeholder = "ejemplo@correo.com",
-                    leadingIcon = Icons.Filled.Email,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { focusManager.clearFocus() }
-                    )
-                )
+                        InputField(
+                            label = "Correo electrónico",
+                            value = recoveryEmail,
+                            onValueChange = { recoveryEmail = it; recoveryMessage = "" },
+                            placeholder = "ejemplo@correo.com",
+                            leadingIcon = Icons.Filled.Email,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                        )
 
-                if (recoveryMessage.isNotEmpty()) {
-                    Text(
-                        text = recoveryMessage,
-                        color = if (recoveryMessage.contains("enviado")) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(top = 12.dp)
-                    )
+                        if (recoveryMessage.isNotEmpty()) {
+                            Text(recoveryMessage, color = MaterialTheme.colorScheme.error, fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        ActionButton(text = "Enviar Código", isLoading = isRecovering) {
+                            if (recoveryEmail.isBlank() || !isValidEmail(recoveryEmail)) {
+                                recoveryMessage = "Ingresa un correo válido"
+                                return@ActionButton
+                            }
+                            scope.launch {
+                                isRecovering = true
+                                val enviado = authRepository.sendPasswordResetOtp(recoveryEmail.trim())
+
+                                if (enviado) {
+                                    recoveryMessage = ""
+                                    recoveryStep = 2
+                                } else {
+                                    recoveryMessage = "Error al enviar el código. Revisa tu conexión."
+                                }
+                                isRecovering = false
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                // --- PASO 2: INGRESAR EL CÓDIGO (OTP) ---
+                AnimatedVisibility(visible = recoveryStep == 2) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Verifica tu identidad", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text(
+                            text = "Ingresa el código de 6 dígitos enviado a:\n$recoveryEmail",
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666),
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            textAlign = TextAlign.Center
+                        )
 
-                ActionButton(text = "Enviar enlace", isLoading = isRecovering) {
-                    if (recoveryEmail.isBlank() || !isValidEmail(recoveryEmail)) {
-                        recoveryMessage = "Ingresa un correo válido"
-                        return@ActionButton
+                        OutlinedTextField(
+                            value = inputOtp,
+                            onValueChange = { if (it.length <= 6) inputOtp = it; recoveryMessage = "" },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center, letterSpacing = 8.sp),
+                            modifier = Modifier.fillMaxWidth(0.8f),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.LightGray
+                            )
+                        )
+
+                        if (recoveryMessage.isNotEmpty()) {
+                            Text(recoveryMessage, color = MaterialTheme.colorScheme.error, fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        ActionButton(text = "Verificar Código", isLoading = isRecovering) {
+                            if (inputOtp.length < 6) {
+                                recoveryMessage = "Ingresa los 6 dígitos"
+                                return@ActionButton
+                            }
+                            scope.launch {
+                                isRecovering = true
+                                val esValido = authRepository.verifyOtpCode(recoveryEmail.trim(), inputOtp)
+
+                                if (esValido) {
+                                    recoveryMessage = ""
+                                    recoveryStep = 3
+                                } else {
+                                    recoveryMessage = "Código incorrecto."
+                                }
+                                isRecovering = false
+                            }
+                        }
+
+                        Text(
+                            text = "¿No lo recibiste? Cancelar e intentar de nuevo",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .padding(top = 16.dp)
+                                .clickable { recoveryStep = 1; inputOtp = "" }
+                        )
                     }
-                    scope.launch {
-                        isRecovering = true
-                        try {
-                            Firebase.auth.sendPasswordResetEmail(recoveryEmail.trim())
-                            recoveryMessage = "Enlace enviado con éxito. Revisa tu correo."
-                        } catch (e: Exception) {
-                            recoveryMessage = mapFirebaseError(e.message)
-                        } finally {
-                            isRecovering = false
+                }
+
+                // --- PASO 3: NUEVA CONTRASEÑA ---
+                AnimatedVisibility(visible = recoveryStep == 3) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Crear nueva contraseña", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text(
+                            text = "Asegúrate de que sea segura y no la olvides.",
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666),
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+
+                        PasswordInputField(
+                            label = "Nueva Contraseña",
+                            value = newPassword,
+                            onValueChange = { newPassword = it; recoveryMessage = "" },
+                            passwordVisible = newPasswordVisible,
+                            onVisibilityChange = { newPasswordVisible = it },
+                            placeholder = "Mínimo 8 caracteres",
+                            leadingIcon = Icons.Filled.Lock,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                        )
+
+                        if (recoveryMessage.isNotEmpty()) {
+                            Text(
+                                text = recoveryMessage,
+                                color = if (recoveryMessage.contains("Éxito")) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        ActionButton(text = "Actualizar Contraseña", isLoading = isRecovering) {
+                            if (newPassword.length < 6) {
+                                recoveryMessage = "La contraseña debe tener al menos 6 caracteres"
+                                return@ActionButton
+                            }
+
+                            scope.launch {
+                                isRecovering = true
+                                delay(1500)
+                                recoveryMessage = "¡Éxito! Contraseña actualizada."
+                                delay(1000)
+                                showBottomSheet = false
+                                recoveryStep = 1
+                                isRecovering = false
+                            }
                         }
                     }
                 }

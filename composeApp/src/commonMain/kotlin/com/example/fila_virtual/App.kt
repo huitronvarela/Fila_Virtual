@@ -1,5 +1,6 @@
 package com.example.fila_virtual
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -12,6 +13,8 @@ import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.auth.animacion.AuthContainer
 import com.example.fila_virtual.features.user.MainScreen
+import com.example.fila_virtual.core.LocalWindowSize
+import com.example.fila_virtual.core.WindowSize
 
 // Firebase Auth
 import dev.gitlive.firebase.Firebase
@@ -25,44 +28,47 @@ fun App(
     onSignOut: () -> Unit = {}
 ) {
     FilaVirtualTheme {
-        // Mantenemos tu lógica de inicio persistente
-        val startScreen = remember { if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login }
-        var currentScreen by remember { mutableStateOf(startScreen) }
+        BoxWithConstraints {
+            val windowSize = WindowSize(maxWidth, maxHeight)
+            
+            CompositionLocalProvider(LocalWindowSize provides windowSize) {
+                // Mantenemos tu lógica de inicio persistente
+                val startScreen = remember { if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login }
+                var currentScreen by remember { mutableStateOf(startScreen) }
 
-        val scope = rememberCoroutineScope()
+                val scope = rememberCoroutineScope()
 
-        // FIX PARA GOOGLE: Escuchamos el cambio de sesión
-        LaunchedEffect(Unit) {
-            Firebase.auth.authStateChanged.collectLatest { user ->
-                // Solo redirigimos automáticamente si el usuario se loguea Y estamos en la pantalla de Login.
-                if (user != null && currentScreen == Screens.Login) {
-                    currentScreen = Screens.Home
-                }
-            }
-        }
-
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            // Usamos un simple 'when' para manejar la navegación principal
-            when (currentScreen) {
-                Screens.Login, Screens.Register -> {
-                    AuthContainer(
-                        currentScreen = currentScreen,
-                        onNavigate = { newScreen -> currentScreen = newScreen },
-                        onGoogleSignIn = onGoogleSignIn
-                    )
-                }
-                Screens.Home -> {
-                    MainScreen(
-                        onLogout = {
-                            scope.launch {
-                                // Llamamos a la función de cierre de sesión que viene de Android
-                                onSignOut()
-                                currentScreen = Screens.Login
-                            }
+                // FIX PARA GOOGLE: Escuchamos el cambio de sesión
+                LaunchedEffect(Unit) {
+                    Firebase.auth.authStateChanged.collectLatest { user ->
+                        if (user != null && currentScreen == Screens.Login) {
+                            currentScreen = Screens.Home
                         }
-                    )
+                    }
                 }
-                else -> {}
+
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    when (currentScreen) {
+                        Screens.Login, Screens.Register -> {
+                            AuthContainer(
+                                currentScreen = currentScreen,
+                                onNavigate = { newScreen -> currentScreen = newScreen },
+                                onGoogleSignIn = onGoogleSignIn
+                            )
+                        }
+                        Screens.Home -> {
+                            MainScreen(
+                                onLogout = {
+                                    scope.launch {
+                                        onSignOut()
+                                        currentScreen = Screens.Login
+                                    }
+                                }
+                            )
+                        }
+                        else -> {}
+                    }
+                }
             }
         }
     }

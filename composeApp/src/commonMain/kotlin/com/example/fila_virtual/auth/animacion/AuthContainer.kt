@@ -26,6 +26,7 @@ import org.jetbrains.compose.resources.stringResource
 import com.example.fila_virtual.auth.login.LoginScreen
 import com.example.fila_virtual.auth.register.RegisterScreen
 import com.example.fila_virtual.navigation.Screens
+import com.example.fila_virtual.core.LocalWindowSize
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 
@@ -36,12 +37,15 @@ fun AuthContainer(
     onGoogleSignIn: () -> Unit = {}
 ) {
     val isLogin = currentScreen == Screens.Login
+    val windowSize = LocalWindowSize.current
 
-    // Aumentamos un poco el padding superior para centrar mejor el contenido naranja
-    val headerHeight = 200.dp
-    
+    // El header se adapta dinámicamente: menos altura en pantallas pequeñas
+    val headerHeight = if (isLogin) {
+        if (windowSize.isSmallScreen) 150.dp else 200.dp
+    } else 0.dp
+
     val topPadding by animateDpAsState(
-        targetValue = if (isLogin) headerHeight else 0.dp,
+        targetValue = headerHeight,
         animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
         label = "animacion_altura"
     )
@@ -57,7 +61,7 @@ fun AuthContainer(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.primary)
     ) {
-        // Cabecera centrada en el área naranja
+        // Cabecera adaptativa
         if (isLogin) {
             Column(
                 modifier = Modifier
@@ -69,15 +73,17 @@ fun AuthContainer(
                 Image(
                     painter = painterResource(Res.drawable.logoblancot),
                     contentDescription = "Logo",
-                    modifier = Modifier.size(80.dp)
+                    modifier = Modifier.size(if (windowSize.isSmallScreen) 60.dp else 80.dp)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(Res.string.app_name),
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (!windowSize.isSmallScreen) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(Res.string.app_name),
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 

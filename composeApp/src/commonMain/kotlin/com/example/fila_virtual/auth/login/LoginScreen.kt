@@ -3,8 +3,6 @@ package com.example.fila_virtual.auth.login
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -28,6 +26,7 @@ import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.NavigationLink
 import com.example.fila_virtual.components.PasswordInputField
 import com.example.fila_virtual.components.SocialLoginBlock
+import com.example.fila_virtual.core.LocalWindowSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -56,6 +55,7 @@ fun LoginScreen(
 ) {
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val windowSize = LocalWindowSize.current
 
     // Instanciamos el repositorio para la magia del OTP
     val authRepository = remember { AuthRepository() }
@@ -85,23 +85,23 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState()) // <--- AQUÍ ESTÁ LA MAGIA DEL SCROLL
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            // SE ELIMINÓ EL .verticalScroll PARA QUE NO HAYA MOVIMIENTO
+            .padding(horizontal = 24.dp, vertical = windowSize.compactDp(8).value.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(16).value.dp))
 
         Text(
             text = stringResource(Res.string.btn_login),
-            fontSize = 28.sp,
+            fontSize = windowSize.adaptiveSp(28),
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
         Text(
             text = stringResource(Res.string.login_welcome),
-            fontSize = 16.sp,
+            fontSize = windowSize.adaptiveSp(16),
             color = Color(0xFF666666),
-            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+            modifier = Modifier.padding(top = 4.dp, bottom = windowSize.compactDp(24).value.dp)
         )
 
         // --- INPUT DE CORREO ---
@@ -125,7 +125,7 @@ fun LoginScreen(
             Text("Formato de correo inválido", color = MaterialTheme.colorScheme.error, fontSize = 10.sp, modifier = Modifier.align(Alignment.Start))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(16).value.dp))
 
         // --- INPUT DE CONTRASEÑA ---
         PasswordInputField(
@@ -149,14 +149,14 @@ fun LoginScreen(
             text = stringResource(Res.string.forgot_password),
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
+            fontSize = windowSize.adaptiveSp(14),
             modifier = Modifier
                 .align(Alignment.End)
                 .padding(top = 8.dp)
                 .clickable { showBottomSheet = true }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(24).value.dp))
 
         if (errorMessage.isNotEmpty()) {
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
@@ -182,18 +182,18 @@ fun LoginScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(32).value.dp))
         SocialLoginBlock(onGoogleClick = onGoogleSignIn)
 
-        // Cambié el weight(1f) por un espacio fijo para que no rompa el scroll
-        Spacer(modifier = Modifier.height(32.dp))
+        // Usamos un Spacer flexible para empujar el registro al final si hay espacio
+        Spacer(modifier = Modifier.weight(1f).heightIn(min = 24.dp))
 
         NavigationLink(
             textMain = stringResource(Res.string.no_account),
             textLink = stringResource(Res.string.btn_register)
         ) { onNavigate(Screens.Register) }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(32).value.dp))
     }
 
     // --- BOTTOM SHEET DE RECUPERACIÓN (FLUJO DE 3 PASOS) ---

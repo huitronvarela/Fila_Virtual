@@ -22,32 +22,42 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         loadUserData()
     }
 
+    // En UserViewModel.kt
     fun loadUserData() {
         val uid = repository.getCurrentUserUid()
         if (uid != null) {
             viewModelScope.launch {
                 isLoading = true
-                errorMessage = ""
                 try {
-                    // 1. Obtenemos los datos del usuario desde Firestore
                     var data = repository.getUserData(uid)
 
                     if (data != null) {
-                        // 2. Si Firestore NO tiene foto, sacamos la foto de la sesión de Google
+                        // 1. Forzar obtención de foto si Firestore no la tiene
                         if (data.fotoUrl.isNullOrEmpty()) {
                             val firebaseUser = repository.getFirebaseUser()
-                            val googlePhotoUrl = firebaseUser?.photoURL
 
-                            // Si Google sí tiene foto, se la inyectamos a nuestros datos usando .copy()
-                            if (googlePhotoUrl != null) {
+                            // Intentamos obtener la foto principal
+                            var googlePhotoUrl = firebaseUser?.photoURL
+
+                            // Si está vacía, buscamos dentro de los datos del proveedor (Google)
+                            if (googlePhotoUrl.isNullOrEmpty()) {
+                                googlePhotoUrl = firebaseUser?.providerData?.firstOrNull { !it.photoURL.isNullOrEmpty() }?.photoURL
+                            }
+
+                            if (!googlePhotoUrl.isNullOrEmpty()) {
+                                println("DEBUG: Foto encontrada en Google -> $googlePhotoUrl")
+                                // Guardamos la URL en el estado local
                                 data = data.copy(fotoUrl = googlePhotoUrl)
+                            } else {
+                                println("DEBUG: La foto de Google llegó NULA en todos lados")
                             }
                         }
 
-                        // 3. Asignamos el usuario (ahora con foto) al estado de la vista
+                        // 2. Verificación de teléfono
+                        val telefonoFinal = if (data.telefono.isNullOrEmpty()) "Sin registrar" else data.telefono
+                        data = data.copy(telefono = telefonoFinal)
+
                         usuario = data
-                    } else {
-                        errorMessage = "No se encontraron datos del usuario"
                     }
                 } catch (e: Exception) {
                     errorMessage = "Error: ${e.message}"

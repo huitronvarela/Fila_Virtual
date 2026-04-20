@@ -4,7 +4,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 // Estructuras de datos para armar el correo y guardar el código
 @Serializable

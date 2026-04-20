@@ -39,8 +39,11 @@ kotlin {
             implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
             implementation("com.google.firebase:firebase-firestore-ktx:24.10.1")
 
-            // Motor Ktor para Android
+            // Motor Ktor para Android (Asegúrate de que esté en libs.versions.toml)
             implementation(libs.ktor.client.okhttp)
+
+            // 1. Esto soluciona el error "(Kotlin reflection is not available)"
+            implementation(kotlin("reflect"))
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -57,7 +60,14 @@ kotlin {
             implementation("dev.gitlive:firebase-auth:1.11.1")
             implementation("dev.gitlive:firebase-firestore:1.11.1")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+            
+            // 2. Manejo de Fechas y Reloj (CORRECCIÓN UNRESOLVED CLOCK)
+            implementation(libs.kotlinx.datetime)
 
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation("io.ktor:ktor-client-logging:2.3.12") // Añadir esto
             // Imagenes y Red
             implementation(libs.kamel.image)
             implementation(libs.ktor.client.core)

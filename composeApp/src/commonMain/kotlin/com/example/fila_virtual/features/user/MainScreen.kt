@@ -16,8 +16,8 @@ import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
 import com.example.fila_virtual.components.ProfileComponent
 import com.example.fila_virtual.features.user.home.HomeView
-import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen
+import com.example.fila_virtual.features.user.pedidos.OrdenesScreen
 import kotlinx.coroutines.launch
 
 @Composable

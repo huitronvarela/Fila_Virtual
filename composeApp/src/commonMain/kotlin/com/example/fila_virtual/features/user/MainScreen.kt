@@ -23,7 +23,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(
     viewModel: UserViewModel = remember { UserViewModel() },
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToFormulario: () -> Unit = {} // <-- 1. Recibimos la acción aquí arriba
 ) {
     val usuario = viewModel.usuario
     val isLoading = viewModel.isLoading
@@ -31,10 +32,6 @@ fun MainScreen(
 
     // Configuración del Pager para permitir deslizar entre pestañas
     val pagerState = rememberPagerState(pageCount = { 4 })
-
-    // Sincronizar el estado del Pager con el BottomNavigationBar
-    // Cuando el Pager cambia (por deslizar), no necesitamos hacer nada especial
-    // porque el BottomNavigationBar usará pagerState.currentPage
 
     Scaffold(
         bottomBar = {
@@ -67,9 +64,12 @@ fun MainScreen(
                     when (page) {
                         0 -> HomeView(usuario)
                         1 -> OrdenesScreen()
-                        2 -> BilleteraScreen(usuario?.billetera ?: "$0.00")
+                        // 2. Pasamos la acción correctamente en lugar del texto del saldo
+                        2 -> BilleteraScreen(
+                            onNavigateToFormulario = onNavigateToFormulario
+                        )
                         3 -> ProfileComponent(
-                            usuario = usuario, 
+                            usuario = usuario,
                             onLogout = { viewModel.signOut(onLogout) }
                         )
                     }

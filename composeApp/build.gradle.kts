@@ -33,7 +33,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
-            
+
             // Firebase Nativo Android
             implementation("com.google.android.gms:play-services-auth:21.0.0")
             implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
@@ -81,6 +81,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        // Eliminamos la línea de ktor que estaba causando el error aquí
     }
     packaging {
         resources {

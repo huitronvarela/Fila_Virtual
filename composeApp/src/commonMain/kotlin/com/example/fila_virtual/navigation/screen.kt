@@ -6,5 +6,6 @@ enum class Screens {
     Register,
     Home,
     Privacy,
-    Terms
+    Terms,
+    FormularioTarjeta // <- Nueva ruta agregada
 }

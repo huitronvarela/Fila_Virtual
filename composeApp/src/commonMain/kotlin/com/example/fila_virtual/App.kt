@@ -6,12 +6,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
-
 // Importaciones de tu estructura
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.auth.animacion.AuthContainer
 import com.example.fila_virtual.features.user.MainScreen
+import com.example.fila_virtual.features.user.billetera.FormularioTarjetaScreen
+import com.example.fila_virtual.features.user.UserViewModel
 
 // Firebase Auth
 import dev.gitlive.firebase.Firebase
@@ -25,16 +26,15 @@ fun App(
     onSignOut: () -> Unit = {}
 ) {
     FilaVirtualTheme {
-        // Mantenemos tu lógica de inicio persistente
         val startScreen = remember { if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login }
         var currentScreen by remember { mutableStateOf(startScreen) }
-
         val scope = rememberCoroutineScope()
 
-        // FIX PARA GOOGLE: Escuchamos el cambio de sesión
+        // Instanciamos el ViewModel aquí para que sobreviva a la navegación
+        val userViewModel = remember { UserViewModel() }
+
         LaunchedEffect(Unit) {
             Firebase.auth.authStateChanged.collectLatest { user ->
-                // Solo redirigimos automáticamente si el usuario se loguea Y estamos en la pantalla de Login.
                 if (user != null && currentScreen == Screens.Login) {
                     currentScreen = Screens.Home
                 }
@@ -42,7 +42,6 @@ fun App(
         }
 
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            // Usamos un simple 'when' para manejar la navegación principal
             when (currentScreen) {
                 Screens.Login, Screens.Register -> {
                     AuthContainer(
@@ -55,10 +54,23 @@ fun App(
                     MainScreen(
                         onLogout = {
                             scope.launch {
-                                // Llamamos a la función de cierre de sesión que viene de Android
                                 onSignOut()
                                 currentScreen = Screens.Login
                             }
+                        },
+                        // Pasamos un callback para que el botón de Billetera avise que quiere ir al formulario
+                        onNavigateToFormulario = {
+                            currentScreen = Screens.FormularioTarjeta
+                        }
+                    )
+                }
+                Screens.FormularioTarjeta -> {
+                    // Renderizamos la nueva pantalla a pantalla completa
+                    FormularioTarjetaScreen(
+                        viewModel = userViewModel,
+                        onBackClick = {
+                            // Al darle atrás, regresamos a la pantalla principal
+                            currentScreen = Screens.Home
                         }
                     )
                 }

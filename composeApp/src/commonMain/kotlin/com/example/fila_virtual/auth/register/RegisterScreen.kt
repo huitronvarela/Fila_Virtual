@@ -1,10 +1,13 @@
 package com.example.fila_virtual.auth.register
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -17,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
@@ -29,6 +33,7 @@ import com.example.fila_virtual.components.ActionButton
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.NavigationLink
 import com.example.fila_virtual.components.PasswordInputField
+import com.example.fila_virtual.components.PasswordStrengthBar
 import com.example.fila_virtual.components.TermsCheckbox
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -51,7 +56,7 @@ import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.repository.AuthRepository
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     val scope = rememberCoroutineScope()
@@ -78,6 +83,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var showTermsAndConditions by remember { mutableStateOf(false) }
     var showOtpSheet by remember { mutableStateOf(false) }
+    val passwordRequester = remember { BringIntoViewRequester() }
 
     val legalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val otpSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -173,25 +179,42 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             val requirements = checkPasswordRequirements(password)
-            PasswordInputField(
-                label = stringResource(Res.string.label_password),
-                value = password,
-                onValueChange = { password = it },
-                passwordVisible = passwordVisible,
-                onVisibilityChange = { passwordVisible = it },
-                placeholder = stringResource(Res.string.placeholder_password),
-                leadingIcon = Icons.Filled.Lock,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                isError = password.isNotEmpty() && !requirements.isAllMet
-            )
 
-            if (password.isNotEmpty()) {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    PasswordRequirementItem("Mínimo 9 caracteres", requirements.hasMinLength)
-                    PasswordRequirementItem("Una mayúscula", requirements.hasUpperCase)
-                    PasswordRequirementItem("Un número", requirements.hasDigit)
-                    PasswordRequirementItem("Un carácter especial", requirements.hasSpecialChar)
+            // Envolvemos el campo y la barra en un Column
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .bringIntoViewRequester(passwordRequester) // Asignamos el requester aquí
+                    .onFocusEvent { focusState ->
+                        // Si el usuario toca el campo, esperamos a que suba el teclado y desplazamos
+                        if (focusState.isFocused) {
+                            scope.launch {
+                                delay(300) // Pequeña pausa para dar tiempo al teclado a aparecer
+                                passwordRequester.bringIntoView()
+                            }
+                        }
+                    }
+            ) {
+                PasswordInputField(
+                    label = stringResource(Res.string.label_password),
+                    value = password,
+                    onValueChange = { password = it },
+                    passwordVisible = passwordVisible,
+                    onVisibilityChange = { passwordVisible = it },
+                    placeholder = stringResource(Res.string.placeholder_password),
+                    leadingIcon = Icons.Filled.Lock,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                    isError = password.isNotEmpty() && !requirements.isAllMet
+                )
+
+                if (password.isNotEmpty()) {
+                    PasswordStrengthBar(password = password)
+
+                    // Cada vez que el usuario escribe, nos aseguramos de que toda la caja siga visible
+                    LaunchedEffect(password) {
+                        passwordRequester.bringIntoView()
+                    }
                 }
             }
 
@@ -334,24 +357,6 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 }
             },
             onCancelClick = { showOtpSheet = false }
-        )
-    }
-}
-
-@Composable
-fun PasswordRequirementItem(text: String, isMet: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Icon(
-            imageVector = if (isMet) Icons.Default.CheckCircle else Icons.Default.Circle,
-            contentDescription = null,
-            tint = if (isMet) TrafficGreen else BorderGray, // Colores estandarizados
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isMet) MaterialTheme.colorScheme.onBackground else MediumGray
         )
     }
 }

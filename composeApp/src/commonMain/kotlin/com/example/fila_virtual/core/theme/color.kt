@@ -21,4 +21,5 @@ val BorderGray = Color(0xFFE0E0E0)
 // Estados
 val TrafficRed = Color(0xFFDC2626)
 val TrafficGreen = Color(0xFF2E7D32)
+val TrafficYellow = Color(0xFFFFC107)
 val SoftRedBg = Color(0xFFFFEBEE)

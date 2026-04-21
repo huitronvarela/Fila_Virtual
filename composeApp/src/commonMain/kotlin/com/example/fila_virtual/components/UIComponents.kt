@@ -28,7 +28,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-
+import com.example.fila_virtual.core.checkPasswordRequirements
 // Importaciones de recursos
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
@@ -298,6 +298,73 @@ fun NavigationLink(textMain: String, textLink: String, onClick: () -> Unit) {
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.clickable(onClick = onClick).padding(start = 4.dp)
+        )
+    }
+}
+@Composable
+fun PasswordStrengthBar(password: String) {
+    val requirements = checkPasswordRequirements(password)
+
+    // Sumamos los requisitos cumplidos
+    var score = 0
+    if (requirements.hasMinLength) score++
+    if (requirements.hasUpperCase) score++
+    if (requirements.hasDigit) score++
+    if (requirements.hasSpecialChar) score++
+
+    val TrafficYellow = Color(0xFFFFC107)
+
+    // Asignamos: 1 = Rojo, 2 y 3 = Amarillo, 4 = Verde
+    val barColor = when (score) {
+        1 -> TrafficRed
+        2 -> TrafficYellow
+        3 -> TrafficYellow
+        4 -> TrafficGreen
+        else -> BorderGray
+    }
+
+    val statusText = when (score) {
+        0 -> "Introduce una contraseña"
+        1 -> "Débil"
+        2 -> "Regular"
+        3 -> "Buena"
+        4 -> "Segura"
+        else -> ""
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        // 1. La barra de progreso visual
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            for (i in 1..4) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .background(
+                            color = if (i <= score) barColor else BorderGray,
+                            shape = RoundedCornerShape(2.dp)
+                        )
+                )
+            }
+        }
+
+        // 2. El texto de estado (Débil, Segura, etc.)
+        Text(
+            text = statusText,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (score == 0) MediumGray else barColor,
+            modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
+        )
+
+        // 3. Texto fijo informativo (no interactivo)
+        Text(
+            text = "Tu contraseña debe contener:\n• Mínimo 9 caracteres\n• Al menos una letra mayúscula\n• Al menos un número\n• Un carácter especial (ej. @, #, $, !)",
+            style = MaterialTheme.typography.labelSmall,
+            color = MediumGray, // Siempre se quedará gris
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }

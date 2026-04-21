@@ -7,17 +7,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.core.WindowSize
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
-import com.example.fila_virtual.components.ProfileComponent
+import com.example.fila_virtual.Perfil.ProfileComponent
 import com.example.fila_virtual.features.user.home.HomeView
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen
-import com.example.fila_virtual.features.user.pedidos.OrdenesScreen
+import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -69,6 +68,7 @@ fun MainScreen(
                             2 -> BilleteraScreen(usuario?.billetera ?: "$0.00")
                             3 -> ProfileComponent(
                                 usuario = usuario,
+                                viewModel = viewModel, // Se añade el viewModel faltante
                                 onLogout = { viewModel.signOut(onLogout) }
                             )
                         }

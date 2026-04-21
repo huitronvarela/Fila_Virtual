@@ -1,4 +1,4 @@
-package com.example.fila_virtual.features.user.pedidos
+package com.example.fila_virtual.features.user.ordenes
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

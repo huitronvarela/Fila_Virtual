@@ -9,6 +9,9 @@ import kotlinx.coroutines.launch
 
 class UserViewModel(private val repository: UserRepository = UserRepository()) : ViewModel() {
 
+    // Cambiamos el acceso a repository a public para que EditProfileScreen pueda usarlo
+    val userRepository: UserRepository get() = repository
+
     var usuario by mutableStateOf<Usuario?>(null)
         private set
 

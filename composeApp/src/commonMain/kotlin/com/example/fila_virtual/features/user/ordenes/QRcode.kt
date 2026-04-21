@@ -15,12 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fila_virtual.core.theme.PrimaryOrange
+import com.example.fila_virtual.core.theme.*
 
 @Composable
 fun QRCodeModalContent(
@@ -32,7 +31,7 @@ fun QRCodeModalContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(LightSurface)
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -41,9 +40,8 @@ fun QRCodeModalContent(
         // 2. Número de Turno
         Text(
             text = "TURNO #$turno",
-            fontSize = 36.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = PrimaryOrange
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -51,9 +49,9 @@ fun QRCodeModalContent(
         // 3. Subtítulo
         Text(
             text = "CÓDIGO DE RECOGIDA",
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.Gray,
+            color = MediumGray,
             letterSpacing = 1.5.sp
         )
 
@@ -63,7 +61,7 @@ fun QRCodeModalContent(
         Box(
             modifier = Modifier
                 .size(180.dp)
-                .border(1.dp, Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -73,7 +71,7 @@ fun QRCodeModalContent(
                 imageVector = Icons.Default.QrCode2,
                 contentDescription = "Código QR",
                 modifier = Modifier.fillMaxSize(),
-                tint = Color.DarkGray
+                tint = DarkGray
             )
         }
 
@@ -82,9 +80,8 @@ fun QRCodeModalContent(
         // 5. Número de Pedido
         Text(
             text = "Pedido #$pedidoId",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -103,8 +100,8 @@ fun QRCodeModalContent(
                 .fillMaxWidth()
                 .height(50.dp),
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, PrimaryOrange),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryOrange)
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
         ) {
             Icon(
                 imageVector = Icons.Default.Download,
@@ -112,7 +109,11 @@ fun QRCodeModalContent(
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Descargar Comprobante", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(
+                text = "Descargar Comprobante",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -124,9 +125,14 @@ fun QRCodeModalContent(
                 .fillMaxWidth()
                 .height(50.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Text(text = "Cerrar", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+            Text(
+                text = "Cerrar",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -140,7 +146,7 @@ fun OrderItemRow(icon: ImageVector, text: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(PrimaryOrange.copy(alpha = 0.05f)) // Fondo muy clarito
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)) // Fondo muy clarito
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -149,21 +155,21 @@ fun OrderItemRow(icon: ImageVector, text: String) {
             modifier = Modifier
                 .size(36.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(PrimaryOrange.copy(alpha = 0.15f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = PrimaryOrange,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         }
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = text,
-            fontSize = 15.sp,
-            color = Color(0xFF333333), // DarkGray
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium
         )
     }

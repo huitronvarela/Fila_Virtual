@@ -7,14 +7,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
-
 // Importaciones de tu estructura
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.auth.animacion.AuthContainer
 import com.example.fila_virtual.features.user.MainScreen
 import com.example.fila_virtual.core.LocalWindowSize
-import com.example.fila_virtual.core.WindowSize
+import com.example.fila_virtual.core.rememberResponsiveSize
 
 // Firebase Auth
 import dev.gitlive.firebase.Firebase
@@ -27,11 +26,13 @@ fun App(
     onGoogleSignIn: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
-    FilaVirtualTheme {
-        BoxWithConstraints {
-            val windowSize = WindowSize(maxWidth, maxHeight)
-            
-            CompositionLocalProvider(LocalWindowSize provides windowSize) {
+    BoxWithConstraints {
+        // OPTIMIZACIÓN: Utilizamos el 'remember' que definiste en tu ResponsiveUtils
+        // Esto evita instancias innecesarias en cada recomposición.
+        val windowSize = rememberResponsiveSize(maxWidth, maxHeight)
+
+        CompositionLocalProvider(LocalWindowSize provides windowSize) {
+            FilaVirtualTheme {
                 // Mantenemos tu lógica de inicio persistente
                 val startScreen = remember { if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login }
                 var currentScreen by remember { mutableStateOf(startScreen) }
@@ -47,7 +48,11 @@ fun App(
                     }
                 }
 
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    // El fondo principal de toda tu app, reaccionando a tu Theme estandarizado
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     when (currentScreen) {
                         Screens.Login, Screens.Register -> {
                             AuthContainer(

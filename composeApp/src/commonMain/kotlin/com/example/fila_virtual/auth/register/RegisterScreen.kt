@@ -1,7 +1,6 @@
 package com.example.fila_virtual.auth.register
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,7 +25,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.components.ActionButton
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.NavigationLink
@@ -46,8 +44,9 @@ import dev.gitlive.firebase.firestore.firestore
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 
-// Importaciones de tu arquitectura
+// Importaciones de tu arquitectura y tema
 import com.example.fila_virtual.core.*
+import com.example.fila_virtual.core.theme.* // Colores y tipografía estandarizados
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.repository.AuthRepository
@@ -57,6 +56,7 @@ import com.example.fila_virtual.repository.AuthRepository
 fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val windowSize = LocalWindowSize.current // Agregado para responsividad
     val authRepository = remember { AuthRepository() }
 
     var nombre by remember { mutableStateOf("") }
@@ -71,7 +71,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
 
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-    
+
     var isSuccess by remember { mutableStateOf(false) }
 
     // Estados para Bottom Sheets
@@ -79,7 +79,6 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     var showTermsAndConditions by remember { mutableStateOf(false) }
     var showOtpSheet by remember { mutableStateOf(false) }
 
-    // Configuración para que abran COMPLETAMENTE y fluido
     val legalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val otpSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -87,27 +86,27 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     var isVerifyingOtp by remember { mutableStateOf(false) }
     var otpErrorMessage by remember { mutableStateOf("") }
 
-    // LÓGICA DE ACTIVACIÓN DEL BOTÓN (Estricta)
-    val isFormValid = nombre.isNotBlank() && 
-                     telefono.length == 10 && 
-                     isValidEmail(email) && 
-                     isStrongPassword(password) && 
-                     password == confirmPassword && 
-                     termsAccepted
+    val isFormValid = nombre.isNotBlank() &&
+            telefono.length == 10 &&
+            isValidEmail(email) &&
+            isStrongPassword(password) &&
+            password == confirmPassword &&
+            termsAccepted
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color.White
+        color = LightSurface
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .navigationBarsPadding()
+                .imePadding() // Para que el teclado no tape el contenido
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(windowSize.compactDp(48).value.dp))
 
             Image(
                 painter = painterResource(Res.drawable.logot),
@@ -117,29 +116,27 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             Text(
                 text = stringResource(Res.string.app_name),
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.displayLarge
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(windowSize.compactDp(32).value.dp))
 
             Text(
                 text = stringResource(Res.string.create_account),
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = stringResource(Res.string.register_welcome),
-                fontSize = 16.sp,
-                color = Color(0xFF666666),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MediumGray,
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
             )
 
             InputField(
-                label = stringResource(Res.string.label_name), 
-                value = nombre, 
-                onValueChange = { if (isValidName(it)) nombre = it }, 
+                label = stringResource(Res.string.label_name),
+                value = nombre,
+                onValueChange = { if (isValidName(it)) nombre = it },
                 placeholder = stringResource(Res.string.placeholder_name),
                 leadingIcon = Icons.Filled.Person,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
@@ -149,9 +146,9 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             InputField(
-                label = stringResource(Res.string.label_phone), 
-                value = telefono, 
-                onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) telefono = it }, 
+                label = stringResource(Res.string.label_phone),
+                value = telefono,
+                onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) telefono = it },
                 placeholder = stringResource(Res.string.placeholder_phone),
                 leadingIcon = Icons.Filled.Phone,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
@@ -159,36 +156,36 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 visualTransformation = PhoneVisualTransformation(),
                 isError = telefono.isNotEmpty() && !isValidPhone(telefono)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             InputField(
-                label = stringResource(Res.string.label_email), 
-                value = email, 
-                onValueChange = { email = it }, 
+                label = stringResource(Res.string.label_email),
+                value = email,
+                onValueChange = { email = it },
                 placeholder = stringResource(Res.string.placeholder_email),
                 leadingIcon = Icons.Filled.Email,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 isError = email.isNotEmpty() && !isValidEmail(email)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             val requirements = checkPasswordRequirements(password)
             PasswordInputField(
-                label = stringResource(Res.string.label_password), 
-                value = password, 
-                onValueChange = { password = it }, 
-                passwordVisible = passwordVisible, 
-                onVisibilityChange = { passwordVisible = it }, 
+                label = stringResource(Res.string.label_password),
+                value = password,
+                onValueChange = { password = it },
+                passwordVisible = passwordVisible,
+                onVisibilityChange = { passwordVisible = it },
                 placeholder = stringResource(Res.string.placeholder_password),
                 leadingIcon = Icons.Filled.Lock,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 isError = password.isNotEmpty() && !requirements.isAllMet
             )
-            
+
             if (password.isNotEmpty()) {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     PasswordRequirementItem("Mínimo 9 caracteres", requirements.hasMinLength)
@@ -197,38 +194,43 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                     PasswordRequirementItem("Un carácter especial", requirements.hasSpecialChar)
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             PasswordInputField(
-                label = stringResource(Res.string.label_confirm_password), 
-                value = confirmPassword, 
-                onValueChange = { confirmPassword = it }, 
-                passwordVisible = confirmPasswordVisible, 
-                onVisibilityChange = { confirmPasswordVisible = it }, 
+                label = stringResource(Res.string.label_confirm_password),
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                passwordVisible = confirmPasswordVisible,
+                onVisibilityChange = { confirmPasswordVisible = it },
                 placeholder = stringResource(Res.string.placeholder_confirm_password),
                 leadingIcon = Icons.Filled.Lock,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 isError = confirmPassword.isNotEmpty() && confirmPassword != password
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             TermsCheckbox(
-                termsAccepted = termsAccepted, 
+                termsAccepted = termsAccepted,
                 onCheckedChange = { termsAccepted = it },
                 onTermsClick = { showTermsAndConditions = true },
                 onPrivacyClick = { showPrivacyPolicy = true }
             )
 
             if (errorMessage.isNotEmpty()) {
-                Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp))
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
             } else {
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // BOTÓN REGISTRAR: SOLO SE ACTIVA SI SE CUMPLEN TODAS LAS CONDICIONES
+            // BOTÓN REGISTRAR
             Button(
                 onClick = {
                     scope.launch {
@@ -246,7 +248,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = Color.LightGray
+                    disabledContainerColor = BorderGray
                 )
             ) {
                 if (isLoading) {
@@ -260,19 +262,27 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             NavigationLink(stringResource(Res.string.already_have_account), stringResource(Res.string.btn_login)) { onNavigate(Screens.Login) }
             Spacer(modifier = Modifier.height(48.dp))
         }
-        
+
         AnimatedVisibility(visible = isSuccess, enter = slideInVertically(initialOffsetY = { it }) + fadeIn()) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.White), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().background(LightSurface), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Image(painterResource(Res.drawable.logot), null, modifier = Modifier.size(120.dp))
-                    Text(stringResource(Res.string.app_name), color = MaterialTheme.colorScheme.primary, fontSize = 40.sp, fontWeight = FontWeight.Bold)
-                    Text("¡Registro exitoso!", color = Color.Gray, fontSize = 18.sp)
+                    Text(
+                        stringResource(Res.string.app_name),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.displayLarge
+                    )
+                    Text(
+                        "¡Registro exitoso!",
+                        color = MediumGray,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
             }
         }
     }
 
-    // --- BOTTOM SHEETS LEGALES ---
     if (showPrivacyPolicy) {
         LegalBottomSheet(
             title = "Aviso de Privacidad",
@@ -291,7 +301,6 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
         )
     }
 
-    // --- BOTTOM SHEET OTP ---
     if (showOtpSheet) {
         OtpBottomSheet(
             email = email,
@@ -335,11 +344,15 @@ fun PasswordRequirementItem(text: String, isMet: Boolean) {
         Icon(
             imageVector = if (isMet) Icons.Default.CheckCircle else Icons.Default.Circle,
             contentDescription = null,
-            tint = if (isMet) Color(0xFF4CAF50) else Color.LightGray,
+            tint = if (isMet) TrafficGreen else BorderGray, // Colores estandarizados
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, fontSize = 12.sp, color = if (isMet) Color.Black else Color.Gray)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isMet) MaterialTheme.colorScheme.onBackground else MediumGray
+        )
     }
 }
 
@@ -349,41 +362,39 @@ fun LegalBottomSheet(title: String, content: String, sheetState: SheetState, onD
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.White,
+        containerColor = LightSurface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize() // OCUPA TODA LA PANTALLA
+                .fillMaxSize()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = title, 
-                fontSize = 24.sp, 
-                fontWeight = FontWeight.Bold, 
-                color = Color.Black,
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
-            
-            HorizontalDivider(color = Color(0xFFF1F3F5))
-            
+
+            HorizontalDivider(color = LightGray)
+
             Box(modifier = Modifier.weight(1f).padding(vertical = 16.dp).verticalScroll(rememberScrollState())) {
                 Text(
-                    text = content, 
-                    fontSize = 15.sp, 
-                    color = Color(0xFF444444), 
-                    lineHeight = 24.sp,
-                    textAlign = TextAlign.Justify // TEXTO JUSTIFICADO
+                    text = content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Justify
                 )
             }
-            
+
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("He leído y acepto", fontWeight = FontWeight.Bold)
+                Text("He leído y acepto", fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
@@ -401,31 +412,64 @@ fun OtpBottomSheet(
     onVerifyClick: () -> Unit,
     onCancelClick: () -> Unit
 ) {
+    val windowSize = LocalWindowSize.current
+
     ModalBottomSheet(
         onDismissRequest = onCancelClick,
         sheetState = sheetState,
-        containerColor = Color.White
+        containerColor = LightSurface
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Verifica tu identidad", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("Código enviado a $email", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp))
+            Text(
+                "Verifica tu identidad",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                "Código enviado a $email",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MediumGray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
             OutlinedTextField(
                 value = otpCode,
                 onValueChange = onOtpChange,
                 modifier = Modifier.fillMaxWidth().height(68.dp),
-                textStyle = TextStyle(fontSize = 28.sp, letterSpacing = 16.sp, textAlign = TextAlign.Center),
+                textStyle = TextStyle(
+                    fontSize = windowSize.adaptiveSp(28), // Texto grande para el código
+                    letterSpacing = windowSize.adaptiveSp(16),
+                    textAlign = TextAlign.Center
+                ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 shape = RoundedCornerShape(8.dp),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = BorderGray
+                )
             )
-            if (errorMessage.isNotEmpty()) Text(errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
             ActionButton("Verificar Código", isVerifying, onVerifyClick)
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Cancelar", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { onCancelClick() }.padding(8.dp))
+            Text(
+                "Cancelar",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onCancelClick() }.padding(8.dp)
+            )
         }
     }
 }

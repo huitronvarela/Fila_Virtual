@@ -17,11 +17,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,9 +38,8 @@ fun OrdenesScreen() {
         // --- TÍTULO UNIFICADO ---
         Text(
             text = "Mis Órdenes",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
@@ -52,12 +49,12 @@ fun OrdenesScreen() {
         // PESTAÑAS (TABS)
         TabRow(
             selectedTabIndex = selectedTabIndex,
-            containerColor = Color.Transparent,
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
             indicator = { tabPositions ->
                 if (selectedTabIndex < tabPositions.size) {
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = PrimaryOrange
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -69,8 +66,9 @@ fun OrdenesScreen() {
                     text = {
                         Text(
                             text = title,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (selectedTabIndex == index) PrimaryOrange else MediumGray
+                            color = if (selectedTabIndex == index) MaterialTheme.colorScheme.primary else MediumGray
                         )
                     }
                 )
@@ -89,7 +87,7 @@ fun OrdenesScreen() {
                     Text(
                         text = "PEDIDO EN CURSO",
                         color = MediumGray,
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
@@ -110,7 +108,7 @@ fun OrdenesScreen() {
                     Text(
                         text = "PRÓXIMAS ENTREGAS",
                         color = MediumGray,
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
@@ -129,7 +127,11 @@ fun OrdenesScreen() {
             }
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No tienes pedidos en tu historial aún.", color = MediumGray)
+                Text(
+                    text = "No tienes pedidos en tu historial aún.",
+                    color = MediumGray,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
@@ -147,6 +149,7 @@ fun OrdenesScreen() {
                     .padding(bottom = 32.dp)
                     .verticalScroll(rememberScrollState())
             ) {
+                // Asumo que este componente ya lo tienes creado en otro lado
                 QRCodeModalContent(
                     turno = "42",
                     pedidoId = "4829",
@@ -167,7 +170,7 @@ fun OrderCard(
     isHighlight: Boolean,
     onClick: () -> Unit
 ) {
-    val statusTextColor = if (isHighlight) PrimaryOrange else MediumGray
+    val statusTextColor = if (isHighlight) MaterialTheme.colorScheme.primary else MediumGray
     val statusBgColor = if (isHighlight) SoftOrangeBg else LightGray.copy(alpha = 0.5f)
 
     Card(
@@ -199,17 +202,42 @@ fun OrderCard(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = restaurantName, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.Black)
-                Text(text = description, color = MediumGray, fontSize = 13.sp)
+                Text(
+                    text = restaurantName,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = description,
+                    color = MediumGray,
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = price, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = PrimaryOrange)
+                Text(
+                    text = price,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             Box(modifier = Modifier.fillMaxHeight().padding(start = 8.dp)) {
                 Surface(shape = RoundedCornerShape(16.dp), color = statusBgColor, modifier = Modifier.align(Alignment.TopEnd)) {
-                    Text(text = status, color = statusTextColor, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    Text(
+                        text = status,
+                        color = statusTextColor,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = LightGray, modifier = Modifier.align(Alignment.CenterEnd))
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = LightGray,
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                )
             }
         }
     }

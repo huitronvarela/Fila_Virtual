@@ -71,6 +71,24 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         }
     }
 
+    fun updateProfile(nombre: String, telefono: String, fotoUrl: String?, onComplete: (Boolean) -> Unit) {
+        val uid = repository.getCurrentUserUid() ?: return
+        viewModelScope.launch {
+            isLoading = true
+            val updates = mapOf(
+                "nombre" to nombre,
+                "telefono" to telefono,
+                "fotoUrl" to fotoUrl
+            )
+            val success = repository.updateUserData(uid, updates)
+            if (success) {
+                loadUserData() // Recargamos los datos localmente
+            }
+            onComplete(success)
+            isLoading = false
+        }
+    }
+
     fun signOut(onSuccess: () -> Unit) {
         viewModelScope.launch {
             repository.signOut()

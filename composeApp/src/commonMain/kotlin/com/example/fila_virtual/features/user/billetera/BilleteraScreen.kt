@@ -20,20 +20,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import com.example.fila_virtual.features.user.UserViewModel
 
-// Agregamos 'private' para evitar conflictos con FormularioTarjetaScreen
 private val BrandOrange = Color(0xFFEA5B1C)
 private val MPBlue = Color(0xFF009EE3)
 private val LightBlueBg = Color(0xFFE1F5FE)
 private val BackgroundGray = Color(0xFFF8F9FA)
 
+enum class BottomSheetStateView {
+    SELECCION_METODO,
+    FORMULARIO_TARJETA
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BilleteraScreen(
-    onNavigateToFormulario: () -> Unit = {} // <-- 1. Recibimos la instrucción de navegación
+    viewModel: UserViewModel
 ) {
+    // 1. Extraemos al usuario y su tarjeta directamente desde el ViewModel (Firebase)
+    val usuario = viewModel.usuario
+    val tarjetaGuardada = usuario?.billetera
+
     var selectedCard by remember { mutableStateOf("Mercado Pago") }
+
+    // Controles del Bottom Sheet
     var showBottomSheet by remember { mutableStateOf(false) }
+    var currentSheetView by remember { mutableStateOf(BottomSheetStateView.SELECCION_METODO) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
 
@@ -63,7 +75,7 @@ fun BilleteraScreen(
                 }
 
                 item {
-                    // Opción de Mercado Pago ya integrada
+                    // Esta opción siempre aparece
                     PaymentItem(
                         title = "Mercado Pago",
                         subtitle = "Pago rápido y seguro",
@@ -72,21 +84,28 @@ fun BilleteraScreen(
                         isSelected = selectedCard == "Mercado Pago",
                         onClick = { selectedCard = "Mercado Pago" }
                     )
-                    Spacer(Modifier.height(12.dp))
-                    PaymentItem(
-                        title = "Visa •••• 4582",
-                        subtitle = "Expira 12/26",
-                        icon = Icons.Default.CreditCard,
-                        iconColor = Color(0xFF1A1F71),
-                        isSelected = selectedCard == "Visa",
-                        onClick = { selectedCard = "Visa" }
-                    )
+
+                    // 2. MAGIA: Solo dibujamos la tarjeta si Firebase nos confirma que existe
+                    if (!tarjetaGuardada.isNullOrEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        PaymentItem(
+                            title = tarjetaGuardada, // Imprimirá el "**** **** **** 4242"
+                            subtitle = "Tarjeta vinculada",
+                            icon = Icons.Default.CreditCard,
+                            iconColor = Color(0xFF1A1F71),
+                            isSelected = selectedCard == tarjetaGuardada,
+                            onClick = { selectedCard = tarjetaGuardada }
+                        )
+                    }
                 }
 
                 item {
                     Spacer(Modifier.height(40.dp))
                     Button(
-                        onClick = { showBottomSheet = true },
+                        onClick = {
+                            currentSheetView = BottomSheetStateView.SELECCION_METODO
+                            showBottomSheet = true
+                        },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BrandOrange),
                         shape = RoundedCornerShape(28.dp)
@@ -99,27 +118,38 @@ fun BilleteraScreen(
             }
         }
 
+        // Lógica del Panel Desplegable (ModalBottomSheet)
         if (showBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
                 sheetState = sheetState,
                 containerColor = Color.White
             ) {
-                AddMPMethodContent(
-                    onAddCard = {
-                        // <-- 2. Cerramos la ventana modal y llamamos a la pantalla del formulario
-                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                            showBottomSheet = false
-                            onNavigateToFormulario()
-                        }
-                    },
-                    onConnectMP = {
-                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                            showBottomSheet = false
-                            // Aquí lanzaremos el Checkout Pro después
-                        }
+                when (currentSheetView) {
+                    BottomSheetStateView.SELECCION_METODO -> {
+                        AddMPMethodContent(
+                            onAddCard = {
+                                currentSheetView = BottomSheetStateView.FORMULARIO_TARJETA
+                            },
+                            onConnectMP = {
+                                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    showBottomSheet = false
+                                }
+                            }
+                        )
                     }
-                )
+                    BottomSheetStateView.FORMULARIO_TARJETA -> {
+                        FormularioTarjetaScreen(
+                            viewModel = viewModel,
+                            onSuccess = {
+                                // Cuando el pago sea exitoso, ocultamos el panel automáticamente
+                                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    showBottomSheet = false
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -133,7 +163,7 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
     ) {
         Text("¿Cómo quieres pagar?", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 24.dp))
 
-        // Opción Mercado Pago (Branding oficial)
+        // Opción Mercado Pago
         Card(
             modifier = Modifier.fillMaxWidth().clickable { onConnectMP() },
             colors = CardDefaults.cardColors(containerColor = LightBlueBg),
@@ -141,7 +171,7 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
         ) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Color.White), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Bolt, null, tint = MPBlue) // Ícono de rayo para "Pago rápido"
+                    Icon(Icons.Default.Bolt, null, tint = MPBlue)
                 }
                 Spacer(Modifier.width(16.dp))
                 Column {
@@ -189,7 +219,6 @@ fun PaymentItem(title: String, subtitle: String, icon: ImageVector, iconColor: C
                     Text(subtitle, color = Color.Gray, fontSize = 14.sp)
                 }
             }
-            // Selector circular
             Box(Modifier.size(24.dp).clip(CircleShape).background(if (isSelected) MPBlue.copy(alpha = 0.1f) else Color.Transparent).padding(4.dp), contentAlignment = Alignment.Center) {
                 if (isSelected) Box(Modifier.size(12.dp).clip(CircleShape).background(MPBlue))
                 else Surface(Modifier.fillMaxSize(), shape = CircleShape, color = Color.Transparent, border = BorderStroke(2.dp, Color.LightGray)) { }

@@ -11,70 +11,59 @@ import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.auth.animacion.AuthContainer
 import com.example.fila_virtual.features.user.MainScreen
-import com.example.fila_virtual.features.user.billetera.FormularioTarjetaScreen
 import com.example.fila_virtual.features.user.UserViewModel
 
 // Firebase Auth
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @Composable
 fun App(
     onGoogleSignIn: () -> Unit = {},
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    googleLoginSuccess: Boolean = false // <-- Recibimos el aviso de MainActivity
 ) {
-    FilaVirtualTheme {
-        val startScreen = remember { if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login }
-        var currentScreen by remember { mutableStateOf(startScreen) }
-        val scope = rememberCoroutineScope()
+    // MEJORA: Verificamos si Firebase ya tiene tu sesión guardada. Si sí, saltamos directo al Home.
+    var currentScreen by remember {
+        mutableStateOf<Screens>(
+            if (Firebase.auth.currentUser != null) Screens.Home else Screens.Login
+        )
+    }
+    val userViewModel = remember { UserViewModel() }
 
-        // Instanciamos el ViewModel aquí para que sobreviva a la navegación
-        val userViewModel = remember { UserViewModel() }
-
-        LaunchedEffect(Unit) {
-            Firebase.auth.authStateChanged.collectLatest { user ->
-                if (user != null && currentScreen == Screens.Login) {
-                    currentScreen = Screens.Home
-                }
-            }
+    // MAGIA: Si MainActivity nos avisa en vivo que el login fue exitoso, abrimos la puerta.
+    LaunchedEffect(googleLoginSuccess) {
+        if (googleLoginSuccess) {
+            currentScreen = Screens.Home
         }
+    }
 
+    FilaVirtualTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+
             when (currentScreen) {
-                Screens.Login, Screens.Register -> {
+
+                Screens.Login -> {
                     AuthContainer(
                         currentScreen = currentScreen,
-                        onNavigate = { newScreen -> currentScreen = newScreen },
+                        onNavigate = { nuevaPantalla ->
+                            currentScreen = nuevaPantalla
+                        },
                         onGoogleSignIn = onGoogleSignIn
                     )
                 }
+
                 Screens.Home -> {
                     MainScreen(
-                        onLogout = {
-                            scope.launch {
-                                onSignOut()
-                                currentScreen = Screens.Login
-                            }
-                        },
-                        // Pasamos un callback para que el botón de Billetera avise que quiere ir al formulario
-                        onNavigateToFormulario = {
-                            currentScreen = Screens.FormularioTarjeta
-                        }
-                    )
-                }
-                Screens.FormularioTarjeta -> {
-                    // Renderizamos la nueva pantalla a pantalla completa
-                    FormularioTarjetaScreen(
                         viewModel = userViewModel,
-                        onBackClick = {
-                            // Al darle atrás, regresamos a la pantalla principal
-                            currentScreen = Screens.Home
+                        onLogout = {
+                            onSignOut()
+                            currentScreen = Screens.Login
                         }
                     )
                 }
-                else -> {}
+
+                else -> { /* Manejo de otras pantallas */ }
             }
         }
     }

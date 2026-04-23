@@ -1,20 +1,17 @@
 package com.example.fila_virtual.features.user
 
-import androidx.compose.runtime.*
+// Importaciones de Ktor para HTTP
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.repository.UserRepository
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.launch
-
-// Importaciones de Ktor para HTTP
-import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.*
 
 class UserViewModel(private val repository: UserRepository = UserRepository()) : ViewModel() {
 
@@ -96,77 +93,51 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
     }
 
     fun procesarPagoSeguro() {
+        if (numeroTarjeta.length < 16 || cvv.isEmpty() || fechaExpiracion.isEmpty()) {
+            errorMessage = "Por favor completa todos los campos correctamente."
+            return
+        }
+
+        isLoading = true
+        errorMessage = ""
+
+        // En Multiplatform (GitLive), Firebase usa Corrutinas
         viewModelScope.launch {
-            isLoading = true
-            errorMessage = ""
-
-            val client = HttpClient {
-                install(ContentNegotiation) {
-                    json(Json { ignoreUnknownKeys = true })
-                }
-            }
-
             try {
-                if (fechaExpiracion.length != 4) throw Exception("La fecha debe tener 4 dígitos (MMAA)")
-                val mes = fechaExpiracion.substring(0, 2).toInt()
-                val anio = fechaExpiracion.substring(2, 4).toInt() + 2000
-
-                // Tu Public Key exacta de la captura
-                val publicKey = "TEST-f1ae3349-69ba-4fed-b8b4-72166ffb423d"
-
-                val mpResponse = client.post("https://api.mercadopago.com/v1/card_tokens?public_key=$publicKey") {
-                    contentType(ContentType.Application.Json)
-                    setBody(buildJsonObject {
-                        put("card_number", numeroTarjeta)
-                        put("expiration_month", mes)
-                        put("expiration_year", anio)
-                        put("security_code", cvv)
-                        put("cardholder", buildJsonObject {
-                            put("name", nombreTitular)
-                        })
-                    })
+                // 1. Obtenemos al usuario activo
+                val userId = Firebase.auth.currentUser?.uid
+                if (userId == null) {
+                    isLoading = false
+                    errorMessage = "Error: No hay una sesión activa."
+                    return@launch
                 }
 
-                if (!mpResponse.status.isSuccess()) {
-                    throw Exception("Mercado Pago rechazó los datos de la tarjeta. Verifica el número.")
-                }
+                // 2. Solo tomamos los últimos 4 dígitos por seguridad
+                val ultimos4Digitos = numeroTarjeta.takeLast(4)
+                val tarjetaSegura = "**** **** **** $ultimos4Digitos"
 
-                val responseText = mpResponse.bodyAsText()
-                val jsonResponse = Json { ignoreUnknownKeys = true }.parseToJsonElement(responseText).jsonObject
-                val tokenGenerado = jsonResponse["id"]?.jsonPrimitive?.content
-                    ?: throw Exception("Error al generar el Token de seguridad.")
+                // 3. Lo subimos a Firestore
+                Firebase.firestore.collection("usuarios").document(userId)
+                    .update("billetera" to tarjetaSegura)
+                // ¡NUEVA LÍNEA! Le decimos a la app que recargue tu perfil para ver la tarjeta
+                loadUserData()
 
-                val functionUrl = "https://us-central1-altoque-c1c87.cloudfunctions.net/procesarPagoDirecto"
+                // 4. Si llega a esta línea, todo salió bien
+                isLoading = false
 
-                val firebaseResponse = client.post(functionUrl) {
-                    contentType(ContentType.Application.Json)
-                    setBody(buildJsonObject {
-                        put("data", buildJsonObject {
-                            put("tokenTarjeta", tokenGenerado)
-                            put("montoTotal", 50)
-                            put("metodoPagoId", "debvisa")
-                            // Obligamos a que use un correo distinto al de tu cuenta de Mercado Pago
-                            put("emailComprador", "gerardo.comprador.altoque.999@ucol.mx")
-                        })
-                    })
-                }
 
-                if (firebaseResponse.status.isSuccess()) {
-                    errorMessage = "¡Tarjeta vinculada correctamente!"
-                    numeroTarjeta = ""
-                    nombreTitular = ""
-                    fechaExpiracion = ""
-                    cvv = ""
-                } else {
-                    val errorDetalle = firebaseResponse.bodyAsText()
-                    throw Exception("Código ${firebaseResponse.status}: $errorDetalle")
-                }
+                errorMessage = "¡Tarjeta vinculada correctamente!"
+
+                // Limpiamos los campos visuales
+                numeroTarjeta = ""
+                nombreTitular = ""
+                fechaExpiracion = ""
+                cvv = ""
 
             } catch (e: Exception) {
-                errorMessage = "Hubo un problema: ${e.message}"
-            } finally {
-                client.close()
+                // Si algo falla en la conexión, cae aquí automáticamente
                 isLoading = false
+                errorMessage = "Error al guardar la tarjeta: ${e.message}"
             }
         }
     }

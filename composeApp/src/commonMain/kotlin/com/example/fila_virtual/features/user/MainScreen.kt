@@ -22,9 +22,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen(
-    viewModel: UserViewModel = remember { UserViewModel() },
-    onLogout: () -> Unit,
-    onNavigateToFormulario: () -> Unit = {} // <-- 1. Recibimos la acción aquí arriba
+    viewModel: UserViewModel, // Recibimos el ViewModel directamente
+    onLogout: () -> Unit
 ) {
     val usuario = viewModel.usuario
     val isLoading = viewModel.isLoading
@@ -64,10 +63,8 @@ fun MainScreen(
                     when (page) {
                         0 -> HomeView(usuario)
                         1 -> OrdenesScreen()
-                        // 2. Pasamos la acción correctamente en lugar del texto del saldo
-                        2 -> BilleteraScreen(
-                            onNavigateToFormulario = onNavigateToFormulario
-                        )
+                        // AQUÍ ESTÁ LA MAGIA: La billetera ya solo ocupa el ViewModel
+                        2 -> BilleteraScreen(viewModel = viewModel)
                         3 -> ProfileComponent(
                             usuario = usuario,
                             onLogout = { viewModel.signOut(onLogout) }

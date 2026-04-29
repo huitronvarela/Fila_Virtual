@@ -28,7 +28,7 @@ fun OrdenesScreen() {
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Column(

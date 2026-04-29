@@ -62,8 +62,7 @@ fun MainScreen(
                 ) { page ->
                     when (page) {
                         0 -> HomeView(usuario)
-                        1 -> OrdenesScreen()
-                        // AQUÍ ESTÁ LA MAGIA: La billetera ya solo ocupa el ViewModel
+                        1 -> OrdenesScreen() // <-- Corregido: ya no recibe el viewModel
                         2 -> BilleteraScreen(viewModel = viewModel)
                         3 -> ProfileComponent(
                             usuario = usuario,

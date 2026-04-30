@@ -8,40 +8,43 @@ import androidx.compose.ui.text.input.VisualTransformation
 /**
  * Mapea los mensajes de error técnicos a mensajes amigables para el usuario.
  */
+
+
 fun mapFirebaseError(message: String?): String {
     if (message == null) return "Ocurrió un error inesperado."
-    
+
     return when {
-        message.contains("invalid-email") || message.contains("INVALID_EMAIL") -> 
+        message.contains("invalid-email") || message.contains("INVALID_EMAIL") ->
             "El correo electrónico no tiene un formato válido."
-        message.contains("user-not-found") || message.contains("USER_NOT_FOUND") -> 
+        message.contains("user-not-found") || message.contains("USER_NOT_FOUND") ->
             "No existe ninguna cuenta con este correo."
-        message.contains("wrong-password") || message.contains("INVALID_PASSWORD") -> 
+        message.contains("wrong-password") || message.contains("INVALID_PASSWORD") ->
             "La contraseña es incorrecta."
-        message.contains("email-already-in-use") || message.contains("EMAIL_EXISTS") -> 
+        message.contains("email-already-in-use") || message.contains("EMAIL_EXISTS") ->
             "Este correo electrónico ya está registrado."
-        message.contains("weak-password") || message.contains("WEAK_PASSWORD") -> 
+        message.contains("weak-password") || message.contains("WEAK_PASSWORD") ->
             "La contraseña es muy débil."
-        message.contains("network-request-failed") -> 
+        message.contains("network-request-failed") ->
             "Error de conexión. Revisa tu internet."
-        message.contains("too-many-requests") -> 
+        message.contains("too-many-requests") ->
             "Demasiados intentos fallidos. Inténtalo más tarde."
         else -> "Error: $message"
     }
 }
 
 /**
- * Valida si un correo tiene formato correcto.
+ * Valida si un correo tiene formato correcto usando Expresiones Regulares.
  */
 fun isValidEmail(email: String): Boolean {
-    return email.contains("@") && email.contains(".")
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
+    return email.matches(emailRegex)
 }
 
 /**
- * Valida si un nombre contiene solo letras y espacios.
+ * Valida si un nombre contiene solo letras y espacios, y no está vacío.
  */
 fun isValidName(name: String): Boolean {
-    return name.all { it.isLetter() || it.isWhitespace() }
+    return name.isNotBlank() && name.all { it.isLetter() || it.isWhitespace() }
 }
 
 /**
@@ -73,10 +76,10 @@ fun isStrongPassword(password: String): Boolean {
 }
 
 /**
- * Valida si el teléfono tiene exactamente 10 dígitos.
+ * Valida si el teléfono tiene exactamente 10 dígitos numéricos.
  */
 fun isValidPhone(phone: String): Boolean {
-    return phone.length == 10
+    return phone.length == 10 && phone.all { it.isDigit() }
 }
 
 /**

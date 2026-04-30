@@ -4,9 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -28,6 +27,7 @@ import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.NavigationLink
 import com.example.fila_virtual.components.PasswordInputField
 import com.example.fila_virtual.components.SocialLoginBlock
+import com.example.fila_virtual.core.LocalWindowSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -40,12 +40,13 @@ import dev.gitlive.firebase.auth.auth
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 
-// Importaciones de tu arquitectura
+// Importaciones de tu arquitectura y tema
 import com.example.fila_virtual.core.mapFirebaseError
 import com.example.fila_virtual.core.isValidEmail
 import com.example.fila_virtual.navigation.Screens
+import com.example.fila_virtual.core.theme.* // Importamos tus colores estandarizados
 
-// Importación de tu nuevo Repositorio
+// Importación de tu Repositorio
 import com.example.fila_virtual.repository.AuthRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,11 +57,10 @@ fun LoginScreen(
 ) {
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val windowSize = LocalWindowSize.current
 
-    // Instanciamos el repositorio para la magia del OTP
     val authRepository = remember { AuthRepository() }
 
-    // Estados de Login Normal
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -68,40 +68,39 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    // Estados para el Modal de recuperación de contraseña
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBottomSheet by remember { mutableStateOf(false) }
     var recoveryEmail by remember { mutableStateOf("") }
     var recoveryMessage by remember { mutableStateOf("") }
     var isRecovering by remember { mutableStateOf(false) }
 
-    // Variables para los 3 pasos de recuperación
-    var recoveryStep by remember { mutableStateOf(1) } // 1: Correo, 2: OTP, 3: Nueva Pass
+    var recoveryStep by remember { mutableStateOf(1) }
     var inputOtp by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var newPasswordVisible by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState()) // <--- AQUÍ ESTÁ LA MAGIA DEL SCROLL
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .imePadding() // Soluciona el problema de que el teclado tape los inputs
+            .verticalScroll(rememberScrollState()) // Permite deslizar si el teclado está activo
+            .padding(horizontal = 24.dp, vertical = windowSize.compactDp(8).value.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(16).value.dp))
 
         Text(
             text = stringResource(Res.string.btn_login),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Text(
             text = stringResource(Res.string.login_welcome),
-            fontSize = 16.sp,
-            color = Color(0xFF666666),
-            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+            style = MaterialTheme.typography.bodyLarge,
+            color = MediumGray,
+            modifier = Modifier.padding(top = 4.dp, bottom = windowSize.compactDp(24).value.dp)
         )
 
         // --- INPUT DE CORREO ---
@@ -122,10 +121,15 @@ fun LoginScreen(
         )
 
         if (email.isNotEmpty() && !isValidEmail(email)) {
-            Text("Formato de correo inválido", color = MaterialTheme.colorScheme.error, fontSize = 10.sp, modifier = Modifier.align(Alignment.Start))
+            Text(
+                text = "Formato de correo inválido",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.align(Alignment.Start).padding(top = 4.dp, start = 16.dp)
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(16).value.dp))
 
         // --- INPUT DE CONTRASEÑA ---
         PasswordInputField(
@@ -149,17 +153,22 @@ fun LoginScreen(
             text = stringResource(Res.string.forgot_password),
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .align(Alignment.End)
                 .padding(top = 8.dp)
                 .clickable { showBottomSheet = true }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(24).value.dp))
 
         if (errorMessage.isNotEmpty()) {
-            Text(text = errorMessage, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
         }
 
         // --- BOTÓN DE LOGIN ---
@@ -182,10 +191,9 @@ fun LoginScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(32).value.dp))
         SocialLoginBlock(onGoogleClick = onGoogleSignIn)
 
-        // Cambié el weight(1f) por un espacio fijo para que no rompa el scroll
         Spacer(modifier = Modifier.height(32.dp))
 
         NavigationLink(
@@ -193,7 +201,7 @@ fun LoginScreen(
             textLink = stringResource(Res.string.btn_register)
         ) { onNavigate(Screens.Register) }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(windowSize.compactDp(32).value.dp))
     }
 
     // --- BOTTOM SHEET DE RECUPERACIÓN (FLUJO DE 3 PASOS) ---
@@ -207,7 +215,7 @@ fun LoginScreen(
                 newPassword = ""
             },
             sheetState = sheetState,
-            containerColor = Color.White
+            containerColor = LightSurface // Usamos el color de tu Theme
         ) {
             Column(
                 modifier = Modifier
@@ -220,11 +228,15 @@ fun LoginScreen(
                 // --- PASO 1: PEDIR CORREO ---
                 AnimatedVisibility(visible = recoveryStep == 1) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Recuperar contraseña", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text(
+                            "Recuperar contraseña",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                         Text(
                             text = "Te enviaremos un código de 6 dígitos para validar tu identidad.",
-                            fontSize = 14.sp,
-                            color = Color(0xFF666666),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MediumGray,
                             modifier = Modifier.padding(vertical = 12.dp),
                             textAlign = TextAlign.Center
                         )
@@ -240,7 +252,12 @@ fun LoginScreen(
                         )
 
                         if (recoveryMessage.isNotEmpty()) {
-                            Text(recoveryMessage, color = MaterialTheme.colorScheme.error, fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp))
+                            Text(
+                                recoveryMessage,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -269,11 +286,15 @@ fun LoginScreen(
                 // --- PASO 2: INGRESAR EL CÓDIGO (OTP) ---
                 AnimatedVisibility(visible = recoveryStep == 2) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Verifica tu identidad", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text(
+                            "Verifica tu identidad",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                         Text(
                             text = "Ingresa el código de 6 dígitos enviado a:\n$recoveryEmail",
-                            fontSize = 14.sp,
-                            color = Color(0xFF666666),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MediumGray,
                             modifier = Modifier.padding(vertical = 12.dp),
                             textAlign = TextAlign.Center
                         )
@@ -288,12 +309,17 @@ fun LoginScreen(
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = Color.LightGray
+                                unfocusedBorderColor = BorderGray
                             )
                         )
 
                         if (recoveryMessage.isNotEmpty()) {
-                            Text(recoveryMessage, color = MaterialTheme.colorScheme.error, fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp))
+                            Text(
+                                recoveryMessage,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -320,7 +346,7 @@ fun LoginScreen(
                         Text(
                             text = "¿No lo recibiste? Cancelar e intentar de nuevo",
                             color = MaterialTheme.colorScheme.primary,
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .padding(top = 16.dp)
@@ -332,11 +358,15 @@ fun LoginScreen(
                 // --- PASO 3: NUEVA CONTRASEÑA ---
                 AnimatedVisibility(visible = recoveryStep == 3) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Crear nueva contraseña", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text(
+                            "Crear nueva contraseña",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                         Text(
                             text = "Asegúrate de que sea segura y no la olvides.",
-                            fontSize = 14.sp,
-                            color = Color(0xFF666666),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MediumGray,
                             modifier = Modifier.padding(vertical = 12.dp)
                         )
 
@@ -355,8 +385,8 @@ fun LoginScreen(
                         if (recoveryMessage.isNotEmpty()) {
                             Text(
                                 text = recoveryMessage,
-                                color = if (recoveryMessage.contains("Éxito")) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
-                                fontSize = 13.sp,
+                                color = if (recoveryMessage.contains("Éxito")) TrafficGreen else MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(top = 12.dp)
                             )
                         }

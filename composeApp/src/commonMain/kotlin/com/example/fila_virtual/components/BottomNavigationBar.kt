@@ -11,19 +11,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.stringResource
+
+// Importaciones de Recursos
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
+
+// Importaciones del Tema Estandarizado
+import com.example.fila_virtual.core.theme.LightSurface
+import com.example.fila_virtual.core.theme.MediumGray
 
 data class NavigationItem(
     val label: String,
@@ -41,7 +46,8 @@ fun BottomNavigationBar(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(elevation = 16.dp, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-            .background(Color.White, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .background(LightSurface, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .navigationBarsPadding() // Protege la barra de los gestos del sistema (iOS/Android)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -49,8 +55,9 @@ fun BottomNavigationBar(
         items.forEach { item ->
             val isSelected = selectedIndex == item.index
 
+            // Animación de color suave usando nuestros colores estandarizados
             val color by animateColorAsState(
-                targetValue = if (isSelected) Color(0xFFFF5722) else Color.LightGray,
+                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MediumGray,
                 animationSpec = tween(300),
                 label = "color_anim"
             )
@@ -60,7 +67,7 @@ fun BottomNavigationBar(
                     .weight(1f)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null 
+                        indication = null // Evita el efecto "ripple" gris por defecto al tocar
                     ) { onItemSelected(item.index) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -74,7 +81,7 @@ fun BottomNavigationBar(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = item.label,
-                    fontSize = 10.sp,
+                    style = MaterialTheme.typography.labelSmall, // Usa la tipografía de tu Theme.kt
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     color = color
                 )

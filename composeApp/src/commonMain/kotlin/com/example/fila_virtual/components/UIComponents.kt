@@ -20,20 +20,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-
+import com.example.fila_virtual.core.checkPasswordRequirements
 // Importaciones de recursos
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
+
+// Importaciones de tu arquitectura y tema
+import com.example.fila_virtual.core.theme.*
 
 @Composable
 fun InputField(
@@ -51,14 +52,14 @@ fun InputField(
         Text(
             text = label,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF333333),
-            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = Color.LightGray) },
+            placeholder = { Text(placeholder, color = MediumGray, style = MaterialTheme.typography.bodyMedium) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
@@ -66,19 +67,20 @@ fun InputField(
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             visualTransformation = visualTransformation,
+            textStyle = MaterialTheme.typography.bodyMedium,
             leadingIcon = leadingIcon?.let {
                 { Icon(imageVector = it, contentDescription = null) }
             },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedContainerColor = Color(0xFFF9F9F9),
-                unfocusedContainerColor = Color(0xFFF9F9F9),
+                unfocusedBorderColor = BorderGray,
+                focusedContainerColor = ExtraLightGray,
+                unfocusedContainerColor = ExtraLightGray,
                 focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
-                unfocusedLeadingIconColor = Color.Gray,
+                unfocusedLeadingIconColor = MediumGray,
                 errorLeadingIconColor = MaterialTheme.colorScheme.error,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground
             )
         )
     }
@@ -101,14 +103,14 @@ fun PasswordInputField(
         Text(
             text = label,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF333333),
-            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = Color.Gray) },
+            placeholder = { Text(placeholder, color = MediumGray, style = MaterialTheme.typography.bodyMedium) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
@@ -116,6 +118,7 @@ fun PasswordInputField(
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            textStyle = MaterialTheme.typography.bodyMedium,
             leadingIcon = leadingIcon?.let {
                 { Icon(imageVector = it, contentDescription = null) }
             },
@@ -127,16 +130,16 @@ fun PasswordInputField(
             },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedContainerColor = Color(0xFFF9F9F9),
-                unfocusedContainerColor = Color(0xFFF9F9F9),
+                unfocusedBorderColor = BorderGray,
+                focusedContainerColor = ExtraLightGray,
+                unfocusedContainerColor = ExtraLightGray,
                 focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
-                unfocusedLeadingIconColor = Color.Gray,
+                unfocusedLeadingIconColor = MediumGray,
                 errorLeadingIconColor = MaterialTheme.colorScheme.error,
                 focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
-                unfocusedTrailingIconColor = Color.Gray,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black
+                unfocusedTrailingIconColor = MediumGray,
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground
             )
         )
     }
@@ -156,29 +159,35 @@ fun TermsCheckbox(
         Checkbox(
             checked = termsAccepted,
             onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary,
+                uncheckedColor = BorderGray
+            )
         )
 
+        val primaryColor = MaterialTheme.colorScheme.primary
+        val textColor = MaterialTheme.colorScheme.onBackground
+
         val annotatedString = buildAnnotatedString {
-            withStyle(style = SpanStyle(color = Color(0xFF444444))) {
+            withStyle(style = SpanStyle(color = textColor)) {
                 append(stringResource(Res.string.terms_accept))
                 append(" ")
             }
 
             pushStringAnnotation(tag = "TERMS", annotation = "terms")
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
+            withStyle(style = SpanStyle(color = primaryColor, fontWeight = FontWeight.SemiBold)) {
                 append(stringResource(Res.string.terms_user_agreement))
             }
             pop()
 
-            withStyle(style = SpanStyle(color = Color(0xFF444444))) {
+            withStyle(style = SpanStyle(color = textColor)) {
                 append(" ")
                 append(stringResource(Res.string.terms_and))
                 append(" ")
             }
 
             pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
+            withStyle(style = SpanStyle(color = primaryColor, fontWeight = FontWeight.SemiBold)) {
                 append(stringResource(Res.string.terms_privacy_policy))
             }
             pop()
@@ -186,7 +195,7 @@ fun TermsCheckbox(
 
         ClickableText(
             text = annotatedString,
-            style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+            style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(start = 4.dp),
             onClick = { offset ->
                 annotatedString.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
@@ -204,14 +213,22 @@ fun ActionButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(56.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            disabledContainerColor = BorderGray
+        ),
         shape = RoundedCornerShape(16.dp),
         enabled = !isLoading
     ) {
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
         } else {
-            Text(text = text, fontSize = 16.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -220,22 +237,22 @@ fun ActionButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
 fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = {}) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = BorderGray)
             Text(
                 text = stringResource(Res.string.social_login_label),
                 modifier = Modifier.padding(horizontal = 16.dp),
-                color = Color(0xFF666666),
-                fontSize = 12.sp
+                color = MediumGray,
+                style = MaterialTheme.typography.labelSmall
             )
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
+            HorizontalDivider(modifier = Modifier.weight(1f), color = BorderGray)
         }
         Spacer(modifier = Modifier.height(24.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .background(Color.White, CircleShape)
-                    .border(1.dp, Color(0xFFE0E0E0), CircleShape)
+                    .background(LightSurface, CircleShape)
+                    .border(1.dp, BorderGray, CircleShape)
                     .clickable { onGoogleClick() }
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
@@ -251,8 +268,8 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .background(Color.White, CircleShape)
-                    .border(1.dp, Color(0xFFE0E0E0), CircleShape)
+                    .background(LightSurface, CircleShape)
+                    .border(1.dp, BorderGray, CircleShape)
                     .clickable { onAppleClick() }
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
@@ -260,7 +277,7 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
                 Image(
                     painter = painterResource(Res.drawable.ic_appel_logo),
                     contentDescription = "Apple",
-                    colorFilter = ColorFilter.tint(Color.Black)
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground)
                 )
             }
         }
@@ -270,13 +287,84 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
 @Composable
 fun NavigationLink(textMain: String, textLink: String, onClick: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = textMain, color = Color(0xFF444444), fontSize = 14.sp)
+        Text(
+            text = textMain,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyMedium
+        )
         Text(
             text = textLink,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.clickable(onClick = onClick).padding(start = 4.dp)
+        )
+    }
+}
+@Composable
+fun PasswordStrengthBar(password: String) {
+    val requirements = checkPasswordRequirements(password)
+
+    // Sumamos los requisitos cumplidos
+    var score = 0
+    if (requirements.hasMinLength) score++
+    if (requirements.hasUpperCase) score++
+    if (requirements.hasDigit) score++
+    if (requirements.hasSpecialChar) score++
+
+    val TrafficYellow = Color(0xFFFFC107)
+
+    // Asignamos: 1 = Rojo, 2 y 3 = Amarillo, 4 = Verde
+    val barColor = when (score) {
+        1 -> TrafficRed
+        2 -> TrafficYellow
+        3 -> TrafficYellow
+        4 -> TrafficGreen
+        else -> BorderGray
+    }
+
+    val statusText = when (score) {
+        0 -> "Introduce una contraseña"
+        1 -> "Débil"
+        2 -> "Regular"
+        3 -> "Buena"
+        4 -> "Segura"
+        else -> ""
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        // 1. La barra de progreso visual
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            for (i in 1..4) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .background(
+                            color = if (i <= score) barColor else BorderGray,
+                            shape = RoundedCornerShape(2.dp)
+                        )
+                )
+            }
+        }
+
+        // 2. El texto de estado (Débil, Segura, etc.)
+        Text(
+            text = statusText,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (score == 0) MediumGray else barColor,
+            modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
+        )
+
+        // 3. Texto fijo informativo (no interactivo)
+        Text(
+            text = "Tu contraseña debe contener:\n• Mínimo 9 caracteres\n• Al menos una letra mayúscula\n• Al menos un número\n• Un carácter especial (ej. @, #, $, !)",
+            style = MaterialTheme.typography.labelSmall,
+            color = MediumGray, // Siempre se quedará gris
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }

@@ -12,7 +12,6 @@ class UserRepository {
 
     fun getCurrentUserUid(): String? = auth.currentUser?.uid
     
-    // Función nueva para obtener los datos de la sesión activa
     fun getFirebaseUser(): FirebaseUser? = auth.currentUser
 
     suspend fun getUserData(uid: String): Usuario? {
@@ -22,6 +21,16 @@ class UserRepository {
         } catch (e: Exception) {
             println("🔥 Repo Error: ${e.message}")
             null
+        }
+    }
+
+    suspend fun updateUserData(uid: String, updates: Map<String, Any?>): Boolean {
+        return try {
+            db.collection("usuarios").document(uid).update(updates)
+            true
+        } catch (e: Exception) {
+            println("🔥 Update Error: ${e.message}")
+            false
         }
     }
 

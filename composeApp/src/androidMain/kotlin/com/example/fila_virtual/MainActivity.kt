@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.* // <-- Importante para el estado visual
+import androidx.core.view.WindowCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -16,16 +16,14 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
 
+
     private lateinit var googleSignInClient: GoogleSignInClient
     private val RC_SIGN_IN = 9001
     private val firebaseAuth = FirebaseAuth.getInstance()
 
-    // 1. Creamos un interruptor para avisar que el login fue un éxito
-    private var isLoginSuccess by mutableStateOf(false)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken("385041919843-v9f3p7kntedtho0612ivkvcdgjsse0jh.apps.googleusercontent.com")
             .requestEmail()
@@ -34,13 +32,12 @@ class MainActivity : ComponentActivity() {
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
         setContent {
+            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+            windowInsetsController.isAppearanceLightStatusBars = true
+
             App(
                 onGoogleSignIn = { startGoogleSignIn() },
-                onSignOut = {
-                    signOut()
-                    isLoginSuccess = false // Apagamos el interruptor al salir
-                },
-                googleLoginSuccess = isLoginSuccess // 2. Le pasamos el aviso a la App
+                onSignOut = { signOut() }
             )
         }
     }
@@ -66,10 +63,12 @@ class MainActivity : ComponentActivity() {
                 val account = task.getResult(ApiException::class.java)!!
                 firebaseAuthWithGoogle(account.idToken!!)
             }  catch (e: ApiException) {
-                android.util.Log.e("GOOGLE_DEBUG", "Error Code: ${e.statusCode}")
-                android.util.Log.e("GOOGLE_DEBUG", "Causa: ${android.util.Log.getStackTraceString(e)}")
+            // ESTO es lo que verás en el Logcat ahora:
+            android.util.Log.e("GOOGLE_DEBUG", "Error Code: ${e.statusCode}")
+            android.util.Log.e("GOOGLE_DEBUG", "Causa: ${android.util.Log.getStackTraceString(e)}")
+
                 Toast.makeText(this, "ERROR GOOGLE: ${e.statusCode}", Toast.LENGTH_LONG).show()
-            }
+        }
         }
     }
 
@@ -83,8 +82,6 @@ class MainActivity : ComponentActivity() {
                         saveUserToFirestore(it.uid, it.displayName, it.email, it.photoUrl?.toString())
                     }
                     Toast.makeText(this, "Sesión iniciada con Google", Toast.LENGTH_SHORT).show()
-
-                    isLoginSuccess = true // 3. ¡Activamos el interruptor para abrir la puerta!
                 } else {
                     Toast.makeText(this, "Error en Firebase: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                 }
@@ -108,6 +105,7 @@ class MainActivity : ComponentActivity() {
                 )
                 userRef.set(userData)
             } else {
+                // SI YA EXISTE, ACTUALIZAMOS SOLO LA FOTO SI GOOGLE NOS LA DA
                 if (photoUrl != null) {
                     userRef.update("fotoUrl", photoUrl)
                 }

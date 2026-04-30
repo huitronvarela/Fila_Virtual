@@ -8,157 +8,299 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.data.Usuario
-import org.jetbrains.compose.resources.stringResource
-import fila_virtual.composeapp.generated.resources.Res
-import fila_virtual.composeapp.generated.resources.*
+
+// Importamos tus componentes reutilizables y utilidades
+import com.example.fila_virtual.components.InputField
+import com.example.fila_virtual.core.LocalWindowSize
+import com.example.fila_virtual.core.theme.*
 
 @Composable
 fun HomeView(usuario: Usuario?) {
+    val windowSize = LocalWindowSize.current
+    val horizontalPadding = windowSize.adaptiveDp(24).value.dp
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        HomeHeader(usuario = usuario)
-        SearchBar()
-        SectionHeader(title = stringResource(Res.string.home_categories), actionText = stringResource(Res.string.home_see_all))
-        CategoryList()
-        Spacer(modifier = Modifier.height(24.dp))
-        SectionHeader(title = stringResource(Res.string.home_featured), actionText = stringResource(Res.string.home_see_all_establishments))
-        EstablishmentList()
+        // --- SECCIÓN FIJA (No se mueve al hacer scroll) ---
         Spacer(modifier = Modifier.height(16.dp))
-    }
-}
+        HomeHeader(padding = horizontalPadding)
+        Spacer(modifier = Modifier.height(16.dp))
 
-@Composable
-fun HomeHeader(usuario: Usuario?) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(text = stringResource(Res.string.home_greeting), color = Color.Gray, fontSize = 16.sp)
-            Text(text = usuario?.nombre ?: stringResource(Res.string.home_welcome), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = Color.Black)
-        }
-        
-        Box(contentAlignment = Alignment.Center) {
-            Surface(
-                modifier = Modifier
-                    .size(45.dp)
-                    .clip(CircleShape),
-                color = Color(0xFFF5F5F7)
-            ) {
-                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(10.dp), tint = Color.Gray)
-            }
+        // Uso de tu componente reutilizable InputField
+        var searchQuery by remember { mutableStateOf("") }
+//        Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+//            InputField(
+//                label = "¿Qué se te antoja hoy?",
+//                value = searchQuery,
+//                onValueChange = { searchQuery = it },
+//                leadingIcon = Icons.Default.Search,
+//                modifier = Modifier.fillMaxWidth()
+//            )
+//        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // --- SECCIÓN DESPLAZABLE (Contenido principal) ---
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            SectionHeader(title = "Categorías", actionText = null, padding = horizontalPadding)
+            Spacer(modifier = Modifier.height(16.dp))
+            CategoryRow(padding = horizontalPadding)
+
+            Spacer(modifier = Modifier.height(32.dp))
+            SectionHeader(title = "Cafeterías Cercanas", actionText = "Ver todas", padding = horizontalPadding)
+            Spacer(modifier = Modifier.height(16.dp))
+            CafeteriasList(padding = horizontalPadding)
+
+            Spacer(modifier = Modifier.height(32.dp))
+            SectionHeader(title = "Recomendaciones para ti", actionText = null, padding = horizontalPadding)
+            Spacer(modifier = Modifier.height(16.dp))
+            RecommendationsList(padding = horizontalPadding)
+
+            Spacer(modifier = Modifier.height(100.dp)) // Espacio extra para que el contenido no quede oculto tras la Nav Bar
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchBar() {
-    OutlinedTextField(
-        value = "",
-        onValueChange = {},
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(56.dp),
-        placeholder = { Text(stringResource(Res.string.home_search_placeholder), color = Color.Gray) },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-        shape = RoundedCornerShape(16.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFF5F5F7),
-            unfocusedContainerColor = Color(0xFFF5F5F7),
-            focusedBorderColor = Color(0xFFFF5722),
-            unfocusedBorderColor = Color.Transparent,
-            cursorColor = Color(0xFFFF5722)
-        )
-    )
-}
-
-@Composable
-fun SectionHeader(title: String, actionText: String) {
+fun HomeHeader(padding: Dp) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = padding),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
-        Text(text = actionText, color = Color(0xFFFF5722), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        // Saludo tal cual lo solicitaste
+        Text(
+            text = "Hola, Bienvenido 👋",
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        // Carrito de compras con Badge
+        BadgedBox(
+            badge = {
+                Badge(
+                    containerColor = PrimaryOrange,
+                    contentColor = Color.White
+                ) { Text("3") }
+            }
+        ) {
+            Surface(
+                modifier = Modifier
+                    .size(45.dp)
+                    .clip(CircleShape)
+                    .clickable { /* Acción al abrir carrito */ },
+                color = BorderGray.copy(alpha = 0.4f)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.ShoppingCart,
+                    contentDescription = "Carrito",
+                    modifier = Modifier.padding(10.dp),
+                    tint = DarkGray
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun CategoryList() {
+fun SectionHeader(title: String, actionText: String?, padding: Dp) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = padding),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = LocalWindowSize.current.adaptiveSp(18),
+                fontWeight = FontWeight.Bold
+            )
+        )
+        if (actionText != null) {
+            Text(
+                text = actionText,
+                color = PrimaryOrange,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.clickable { /* Acción */ }
+            )
+        }
+    }
+}
+
+@Composable
+fun CategoryRow(padding: Dp) {
     val categories = listOf(
-        "Pizza" to Icons.Default.LocalPizza,
-        "Burgers" to Icons.Default.LunchDining,
-        "Sushi" to Icons.Default.SetMeal,
-        "Tacos" to Icons.Default.Fastfood,
+        "Comida" to Icons.Default.Restaurant,
+        "Bebidas" to Icons.Default.LocalCafe,
+        "Snacks" to Icons.Default.Fastfood,
         "Postres" to Icons.Default.Icecream
     )
-    LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        items(categories) { (name, icon) ->
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = padding),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        categories.forEach { (name, icon) ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Surface(modifier = Modifier.size(70.dp), shape = RoundedCornerShape(16.dp), color = Color(0xFFFFF1EE)) {
-                    Icon(icon, contentDescription = name, modifier = Modifier.padding(20.dp), tint = Color(0xFFFF5722))
+                Surface(
+                    modifier = Modifier.size(70.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = LightSurface,
+                    shadowElevation = 2.dp
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = name,
+                        modifier = Modifier.padding(20.dp),
+                        tint = Color(0xFFA93226)
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = name, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.labelSmall.copy(color = DarkGray, fontWeight = FontWeight.Medium)
+                )
             }
         }
     }
 }
 
 @Composable
-fun EstablishmentList() {
-    val places = listOf(
-        Place("La Trattoria Italiana", "4.8", "Pizza · Italiana · $$", Icons.Default.Restaurant),
-        Place("Big Burger Station", "4.6", "Hamburguesas · Americana · $$", Icons.Default.LunchDining),
-        Place("Sakura Sushi House", "4.9", "Sushi · Asiática · $$$", Icons.Default.SetMeal)
+fun CafeteriasList(padding: Dp) {
+    val cafeterias = listOf(
+        Cafeteria("Cafetería Juan", "4.8", "1.2 km", listOf("Café", "Postres")),
+        Cafeteria("Starbucks Campus", "4.5", "0.5 km", listOf("Bebidas", "Premium"))
     )
-    places.forEach { place ->
-        EstablishmentCard(place)
-        Spacer(modifier = Modifier.height(16.dp))
+
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = padding),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(cafeterias) { cafe ->
+            CafeteriaCard(cafe)
+        }
     }
 }
 
-data class Place(val name: String, val rating: String, val tags: String, val icon: ImageVector)
-
 @Composable
-fun EstablishmentCard(place: Place) {
+fun CafeteriaCard(cafe: Cafeteria) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(120.dp),
+        modifier = Modifier.width(260.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxHeight().width(120.dp).background(Color(0xFFF5F5F7)), contentAlignment = Alignment.Center) {
-                Icon(place.icon, contentDescription = null, modifier = Modifier.size(40.dp), tint = Color.LightGray)
+        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(ExtraLightGray),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Storefront, contentDescription = null, tint = MediumGray)
             }
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
-                Text(text = place.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(text = cafe.name, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFFFFB300))
+                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = TrafficYellow)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = place.rating, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
+                    Text(text = "${cafe.rating} • ${cafe.distance}", style = MaterialTheme.typography.labelSmall)
                 }
-                Text(text = place.tags, color = Color.Gray, fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    cafe.tags.take(2).forEach { tag ->
+                        Text(
+                            text = tag,
+                            modifier = Modifier
+                                .background(SoftOrangeBg, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, color = PrimaryOrange)
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+fun RecommendationsList(padding: Dp) {
+    val products = listOf(
+        Product("Hamburguesa Clásica", "El Rincón del Sabor", "$8.50"),
+        Product("Croissant de Mantequilla", "Cafetería Juan", "$3.20")
+    )
+
+    Column(modifier = Modifier.padding(horizontal = padding)) {
+        products.forEach { product ->
+            RecommendationCard(product)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+fun RecommendationCard(product: Product) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = LightSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .background(Color(0xFF1E1E24)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = product.name, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    Text(text = product.store, style = MaterialTheme.typography.labelSmall)
+                    Text(text = product.price, color = PrimaryOrange, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                }
+                Surface(modifier = Modifier.size(32.dp), shape = CircleShape, color = PrimaryOrange) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.padding(6.dp))
+                }
+            }
+        }
+    }
+}
+
+// Modelos auxiliares
+data class Cafeteria(val name: String, val rating: String, val distance: String, val tags: List<String>)
+data class Product(val name: String, val store: String, val price: String)

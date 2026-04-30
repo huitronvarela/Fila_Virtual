@@ -17,7 +17,9 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
-
+.cursor
+_bmad
+_bmad-output
 # Firebase
 google-services.json
 GoogleService-Info.plist

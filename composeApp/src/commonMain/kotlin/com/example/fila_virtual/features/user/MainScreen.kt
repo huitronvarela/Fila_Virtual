@@ -18,7 +18,6 @@ import com.example.fila_virtual.Perfil.ProfileComponent
 import com.example.fila_virtual.features.user.home.HomeView
 import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen
-import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import kotlinx.coroutines.launch
 
 // Importamos el tema para los colores estandarizados
@@ -84,7 +83,7 @@ fun MainScreen(
                             when (page) {
                                 0 -> HomeView(usuario)
                                 1 -> OrdenesScreen()
-                                2 -> BilleteraScreen(usuario?.billetera ?: "$0.00")
+                                2 -> BilleteraScreen(viewModel)
                                 3 -> ProfileComponent(
                                     usuario = usuario,
                                     viewModel = viewModel,

@@ -4,6 +4,10 @@ android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "35"
 
+# Kotlin y Compose Multiplatform
+kotlin = "2.1.0"
+composeMultiplatform = "1.7.3"
+
 # AndroidX estables
 androidx-activity = "1.9.3"
 androidx-appcompat = "1.7.0"

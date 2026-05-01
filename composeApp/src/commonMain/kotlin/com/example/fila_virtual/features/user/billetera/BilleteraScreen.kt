@@ -21,11 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import com.example.fila_virtual.features.user.UserViewModel
+import com.example.fila_virtual.core.LocalWindowSize
+import com.example.fila_virtual.core.theme.*
 
-private val BrandOrange = Color(0xFFEA5B1C)
+// Colores específicos de marca (fuera del tema general)
 private val MPBlue = Color(0xFF009EE3)
 private val LightBlueBg = Color(0xFFE1F5FE)
-private val BackgroundGray = Color(0xFFF8F9FA)
 
 enum class BottomSheetStateView {
     SELECCION_METODO,
@@ -37,9 +38,13 @@ enum class BottomSheetStateView {
 fun BilleteraScreen(
     viewModel: UserViewModel
 ) {
-    // 1. Extraemos al usuario y su tarjeta directamente desde el ViewModel (Firebase)
+    val windowSize = LocalWindowSize.current
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+
+    // 1. Extraemos al usuario y sus métodos de pago directamente desde el ViewModel (Firebase)
     val usuario = viewModel.usuario
-    val tarjetaGuardada = usuario?.billetera
+    val metodosPago = usuario?.metodosPago ?: emptyList()
 
     var selectedCard by remember { mutableStateOf("Mercado Pago") }
 
@@ -53,7 +58,7 @@ fun BilleteraScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(BackgroundGray)
+                .background(colorScheme.background)
         ) {
             // Header
             Row(
@@ -62,16 +67,37 @@ fun BilleteraScreen(
                     .padding(top = 24.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.ArrowBack, "Regresar", Modifier.size(24.dp).clickable { })
-                Spacer(Modifier.width(16.dp))
-                Text("Métodos de Pago", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                IconButton(onClick = { /* Navegación */ }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack, 
+                        contentDescription = "Regresar", 
+                        modifier = Modifier.size(24.dp),
+                        tint = colorScheme.onBackground
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Métodos de Pago", 
+                    style = typography.titleLarge.copy(
+                        fontSize = windowSize.adaptiveSp(20)
+                    ),
+                    color = colorScheme.onBackground
+                )
             }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp)
             ) {
                 item {
-                    Text("Tus métodos guardados", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 12.dp))
+                    Text(
+                        text = "Tus métodos guardados", 
+                        style = typography.titleMedium.copy(
+                            fontSize = windowSize.adaptiveSp(18),
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = colorScheme.onBackground
+                    )
                 }
 
                 item {
@@ -85,16 +111,16 @@ fun BilleteraScreen(
                         onClick = { selectedCard = "Mercado Pago" }
                     )
 
-                    // 2. MAGIA: Solo dibujamos la tarjeta si Firebase nos confirma que existe
-                    if (!tarjetaGuardada.isNullOrEmpty()) {
+                    // 2. MAGIA: Mostramos todas las tarjetas guardadas en el array metodosPago
+                    metodosPago.forEach { tarjeta ->
                         Spacer(Modifier.height(12.dp))
                         PaymentItem(
-                            title = tarjetaGuardada, // Imprimirá el "**** **** **** 4242"
+                            title = tarjeta,
                             subtitle = "Tarjeta vinculada",
                             icon = Icons.Default.CreditCard,
-                            iconColor = Color(0xFF1A1F71),
-                            isSelected = selectedCard == tarjetaGuardada,
-                            onClick = { selectedCard = tarjetaGuardada }
+                            iconColor = Color(0xFF1A1F71), // Color de tarjeta genérica
+                            isSelected = selectedCard == tarjeta,
+                            onClick = { selectedCard = tarjeta }
                         )
                     }
                 }
@@ -107,12 +133,19 @@ fun BilleteraScreen(
                             showBottomSheet = true
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandOrange),
+                        colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
                         shape = RoundedCornerShape(28.dp)
                     ) {
-                        Icon(Icons.Default.Add, null, tint = Color.White)
+                        Icon(Icons.Default.Add, null, tint = colorScheme.onPrimary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Añadir método de pago", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "Añadir método de pago", 
+                            style = typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = windowSize.adaptiveSp(16)
+                            ),
+                            color = colorScheme.onPrimary
+                        )
                     }
                 }
             }
@@ -123,7 +156,7 @@ fun BilleteraScreen(
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
                 sheetState = sheetState,
-                containerColor = Color.White
+                containerColor = colorScheme.surface
             ) {
                 when (currentSheetView) {
                     BottomSheetStateView.SELECCION_METODO -> {
@@ -142,7 +175,6 @@ fun BilleteraScreen(
                         FormularioTarjetaScreen(
                             viewModel = viewModel,
                             onSuccess = {
-                                // Cuando el pago sea exitoso, ocultamos el panel automáticamente
                                 coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
                                     showBottomSheet = false
                                 }
@@ -157,11 +189,22 @@ fun BilleteraScreen(
 
 @Composable
 fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
+    val windowSize = LocalWindowSize.current
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 48.dp, top = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("¿Cómo quieres pagar?", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 24.dp))
+        Text(
+            text = "¿Cómo quieres pagar?", 
+            style = typography.titleLarge.copy(
+                fontSize = windowSize.adaptiveSp(20)
+            ), 
+            modifier = Modifier.padding(bottom = 24.dp),
+            color = colorScheme.onSurface
+        )
 
         // Opción Mercado Pago
         Card(
@@ -170,13 +213,32 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.surface), 
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(Icons.Default.Bolt, null, tint = MPBlue)
                 }
                 Spacer(Modifier.width(16.dp))
                 Column {
-                    Text("Mercado Pago", fontWeight = FontWeight.Bold, color = MPBlue)
-                    Text("Dinero en cuenta y cuotas", fontSize = 12.sp, color = MPBlue.copy(alpha = 0.7f))
+                    Text(
+                        text = "Mercado Pago", 
+                        style = typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = windowSize.adaptiveSp(16)
+                        ),
+                        color = MPBlue
+                    )
+                    Text(
+                        text = "Dinero en cuenta y cuotas", 
+                        style = typography.bodySmall.copy(
+                            fontSize = windowSize.adaptiveSp(12)
+                        ),
+                        color = MPBlue.copy(alpha = 0.7f)
+                    )
                 }
             }
         }
@@ -186,15 +248,28 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
         // Opción Tarjeta
         Card(
             modifier = Modifier.fillMaxWidth().clickable { onAddCard() },
-            colors = CardDefaults.cardColors(containerColor = BackgroundGray),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.background),
             shape = RoundedCornerShape(16.dp)
         ) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Color.White), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.CreditCard, null, tint = Color.Gray)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.surface), 
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.CreditCard, null, tint = MediumGray)
                 }
                 Spacer(Modifier.width(16.dp))
-                Text("Nueva Tarjeta", fontWeight = FontWeight.Medium)
+                Text(
+                    text = "Nueva Tarjeta", 
+                    style = typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = windowSize.adaptiveSp(16)
+                    ),
+                    color = colorScheme.onSurface
+                )
             }
         }
     }
@@ -202,26 +277,64 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
 
 @Composable
 fun PaymentItem(title: String, subtitle: String, icon: ImageVector, iconColor: Color, isSelected: Boolean, onClick: () -> Unit) {
+    val windowSize = LocalWindowSize.current
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(BackgroundGray), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colorScheme.background), 
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(icon, null, tint = iconColor)
                 }
                 Spacer(Modifier.width(16.dp))
                 Column {
-                    Text(title, fontWeight = FontWeight.Bold)
-                    Text(subtitle, color = Color.Gray, fontSize = 14.sp)
+                    Text(
+                        text = title, 
+                        style = typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = windowSize.adaptiveSp(16)
+                        ),
+                        color = colorScheme.onSurface
+                    )
+                    Text(
+                        text = subtitle, 
+                        style = typography.bodyMedium.copy(
+                            fontSize = windowSize.adaptiveSp(14)
+                        ),
+                        color = MediumGray
+                    )
                 }
             }
-            Box(Modifier.size(24.dp).clip(CircleShape).background(if (isSelected) MPBlue.copy(alpha = 0.1f) else Color.Transparent).padding(4.dp), contentAlignment = Alignment.Center) {
-                if (isSelected) Box(Modifier.size(12.dp).clip(CircleShape).background(MPBlue))
-                else Surface(Modifier.fillMaxSize(), shape = CircleShape, color = Color.Transparent, border = BorderStroke(2.dp, Color.LightGray)) { }
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) MPBlue.copy(alpha = 0.1f) else Color.Transparent)
+                    .padding(4.dp), 
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Box(Modifier.size(12.dp).clip(CircleShape).background(MPBlue))
+                } else {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(), 
+                        shape = CircleShape, 
+                        color = Color.Transparent,
+                        border = BorderStroke(2.dp, BorderGray)
+                    ) { }
+                }
             }
         }
     }

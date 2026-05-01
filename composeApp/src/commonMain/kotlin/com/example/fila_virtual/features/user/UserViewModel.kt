@@ -61,7 +61,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                 try {
                     var data = repository.getUserData(uid)
                     if (data != null) {
-                        if (data.fotoUrl.isNullOrEmpty()) {
+                        if (data.fotoUrl.isEmpty()) {
                             val firebaseUser = repository.getFirebaseUser()
                             val googlePhotoUrl = firebaseUser?.photoURL
                             if (googlePhotoUrl != null) {
@@ -85,11 +85,16 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         val uid = repository.getCurrentUserUid()
         if (uid != null) {
             viewModelScope.launch {
-                val updates = mapOf(
+                val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
+                val updates = mutableMapOf<String, Any?>(
                     "nombre" to nombre,
                     "telefono" to telefono,
-                    "fotoUrl" to fotoUrl
+                    "updatedAt" to now
                 )
+                if (fotoUrl != null) {
+                    updates["fotoUrl"] = fotoUrl
+                }
+                
                 val success = repository.updateUserData(uid, updates)
                 if (success) {
                     loadUserData() // Recargar datos locales tras la actualización
@@ -166,11 +171,19 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     if (userId != null) {
                         val ultimos4 = numeroTarjeta.takeLast(4)
                         val mascara = "**** **** **** $ultimos4"
+                        val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
+
+                        // Actualizar metodosPago (array) y updatedAt
+                        val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
+                        if (!currentMethods.contains(mascara)) {
+                            currentMethods.add(mascara)
+                        }
 
                         Firebase.firestore.collection("usuarios").document(userId)
                             .update(
-                                "billetera" to mascara,
-                                "card_token" to tokenId
+                                "metodosPago" to currentMethods,
+                                "card_token" to tokenId,
+                                "updatedAt" to now
                             )
 
                         loadUserData()
@@ -197,16 +210,12 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         }
     }
 
-    // =====================================================================
-    // NUEVA FUNCIÓN: Ejecutar el cobro real de prueba a Mercado Pago
-    // =====================================================================
     fun realizarCobroPrueba() {
         isLoading = true
         errorMessage = "Procesando pago de \$15.00..."
 
         viewModelScope.launch {
             try {
-                // 1. Verificamos la sesión y extraemos los datos del usuario
                 val userId = Firebase.auth.currentUser?.uid
                 if (userId == null) {
                     errorMessage = "Error: No hay una sesión activa."
@@ -216,7 +225,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
 
                 val userDoc = Firebase.firestore.collection("usuarios").document(userId).get()
 
-                // Usamos validación segura en caso de que el campo aún no exista
                 val cardToken = if (userDoc.contains("card_token")) userDoc.get<String>("card_token") else ""
                 val userEmail = if (userDoc.contains("email")) userDoc.get<String>("email") else "test@test.com"
 
@@ -226,12 +234,10 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     return@launch
                 }
 
-                // 2. Preparamos el cliente HTTP
                 val client = HttpClient {
                     install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 }
 
-                // 3. Ejecutamos el cargo por $15 pesos
                 val response: HttpResponse = client.post("https://api.mercadopago.com/v1/payments") {
                     header(HttpHeaders.Authorization, "Bearer $MERCADO_PAGO_ACCESS_TOKEN")
                     contentType(ContentType.Application.Json)
@@ -247,7 +253,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     })
                 }
 
-                // 4. Analizamos la respuesta
                 if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
                     val jsonResponse = Json.parseToJsonElement(response.bodyAsText()).jsonObject
                     val statusPago = jsonResponse["status"]?.jsonPrimitive?.content ?: ""
@@ -260,7 +265,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                 } else {
                     val errorBody = response.bodyAsText()
                     errorMessage = "Error en el cobro: ${response.status}"
-                    println("ERROR MERCADO PAGO: $errorBody") // Imprime en Logcat el motivo del rechazo
+                    println("ERROR MERCADO PAGO: $errorBody")
                 }
 
             } catch (e: Exception) {

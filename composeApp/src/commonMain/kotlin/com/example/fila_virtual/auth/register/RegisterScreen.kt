@@ -339,7 +339,19 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                         try {
                             val authResult = Firebase.auth.createUserWithEmailAndPassword(email.trim(), password.trim())
                             authResult.user?.uid?.let { uid ->
-                                val nuevoUsuario = Usuario(nombre.trim(), telefono.trim(), email.trim(), "ALUMNO", "", "11 de marzo de 2026")
+                                val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
+                                val nuevoUsuario = Usuario(
+                                    nombre = nombre.trim(),
+                                    email = email.trim(),
+                                    telefono = telefono.trim(),
+                                    fotoUrl = "",
+                                    rolGlobal = "cliente",
+                                    metodosPago = emptyList(),
+                                    verificado = true,
+                                    activo = true,
+                                    createdAt = now,
+                                    updatedAt = now
+                                )
                                 Firebase.firestore.collection("usuarios").document(uid).set(nuevoUsuario)
                             }
                             showOtpSheet = false

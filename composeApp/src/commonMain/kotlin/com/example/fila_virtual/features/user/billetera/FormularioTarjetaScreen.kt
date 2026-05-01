@@ -17,10 +17,9 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.features.user.UserViewModel
-
-private val BrandOrange = Color(0xFFEA5B1C)
+import com.example.fila_virtual.core.LocalWindowSize
+import com.example.fila_virtual.core.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +27,10 @@ fun FormularioTarjetaScreen(
     viewModel: UserViewModel,
     onSuccess: () -> Unit
 ) {
+    val windowSize = LocalWindowSize.current
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -36,8 +39,10 @@ fun FormularioTarjetaScreen(
     ) {
         Text(
             text = "Ingresa tu tarjeta",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
+            style = typography.titleLarge.copy(
+                fontSize = windowSize.adaptiveSp(20)
+            ),
+            color = colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
@@ -45,13 +50,25 @@ fun FormularioTarjetaScreen(
         OutlinedTextField(
             value = viewModel.numeroTarjeta,
             onValueChange = { viewModel.onNumeroTarjetaChange(it.filter { char -> char.isDigit() }) },
-            label = { Text("Número de la tarjeta") },
-            leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null) },
+            label = { Text("Número de la tarjeta", style = typography.bodyMedium) },
+            leadingIcon = { 
+                Icon(
+                    Icons.Default.CreditCard, 
+                    contentDescription = null,
+                    tint = MediumGray
+                ) 
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             visualTransformation = CardNumberVisualTransformation(),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colorScheme.primary,
+                unfocusedBorderColor = BorderGray,
+                focusedLabelColor = colorScheme.primary,
+                cursorColor = colorScheme.primary
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -60,10 +77,16 @@ fun FormularioTarjetaScreen(
         OutlinedTextField(
             value = viewModel.nombreTitular,
             onValueChange = { viewModel.onNombreTitularChange(it.uppercase()) },
-            label = { Text("Nombre como aparece en la tarjeta") },
+            label = { Text("Nombre como aparece en la tarjeta", style = typography.bodyMedium) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colorScheme.primary,
+                unfocusedBorderColor = BorderGray,
+                focusedLabelColor = colorScheme.primary,
+                cursorColor = colorScheme.primary
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -76,24 +99,36 @@ fun FormularioTarjetaScreen(
             OutlinedTextField(
                 value = viewModel.fechaExpiracion,
                 onValueChange = { viewModel.onFechaExpiracionChange(it.filter { char -> char.isDigit() }) },
-                label = { Text("Vencimiento") },
-                placeholder = { Text("MMAA") },
+                label = { Text("Vencimiento", style = typography.bodyMedium) },
+                placeholder = { Text("MMAA", style = typography.bodyMedium) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 visualTransformation = ExpirationDateVisualTransformation(),
                 singleLine = true,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colorScheme.primary,
+                    unfocusedBorderColor = BorderGray,
+                    focusedLabelColor = colorScheme.primary,
+                    cursorColor = colorScheme.primary
+                )
             )
 
             // CVV
             OutlinedTextField(
                 value = viewModel.cvv,
                 onValueChange = { viewModel.onCvvChange(it.filter { char -> char.isDigit() }) },
-                label = { Text("CVV") },
+                label = { Text("CVV", style = typography.bodyMedium) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colorScheme.primary,
+                    unfocusedBorderColor = BorderGray,
+                    focusedLabelColor = colorScheme.primary,
+                    cursorColor = colorScheme.primary
+                )
             )
         }
 
@@ -101,10 +136,13 @@ fun FormularioTarjetaScreen(
 
         // Mensaje de error/éxito del ViewModel
         if (viewModel.errorMessage.isNotEmpty()) {
+            val isSuccess = viewModel.errorMessage.contains("correctamente") || viewModel.errorMessage.contains("éxito")
             Text(
                 text = viewModel.errorMessage,
-                color = if (viewModel.errorMessage.contains("correctamente")) Color(0xFF4CAF50) else Color.Red,
-                fontSize = 14.sp,
+                color = if (isSuccess) TrafficGreen else colorScheme.error,
+                style = typography.bodyMedium.copy(
+                    fontSize = windowSize.adaptiveSp(14)
+                ),
                 modifier = Modifier.padding(bottom = 16.dp)
             )
         }
@@ -112,19 +150,31 @@ fun FormularioTarjetaScreen(
         Button(
             onClick = {
                 viewModel.procesarPagoSeguro()
-                // Nota: Podrías llamar onSuccess() aquí si quieres cerrar el panel automáticamente al terminar
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandOrange),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorScheme.primary,
+                contentColor = colorScheme.onPrimary
+            ),
             shape = RoundedCornerShape(28.dp),
             enabled = !viewModel.isLoading && viewModel.numeroTarjeta.length == 16 && viewModel.cvv.isNotEmpty()
         ) {
             if (viewModel.isLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(
+                    color = colorScheme.onPrimary, 
+                    modifier = Modifier.size(24.dp)
+                )
             } else {
-                Text("Vincular Tarjeta", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    text = "Vincular Tarjeta",
+                    style = typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = windowSize.adaptiveSp(16)
+                    ),
+                    color = colorScheme.onPrimary
+                )
             }
         }
     }
@@ -169,9 +219,6 @@ class ExpirationDateVisualTransformation : VisualTransformation {
         var out = ""
         for (i in trimmed.indices) {
             out += trimmed[i]
-
-            // CORRECCIÓN: Si llegamos al segundo número (índice 1), SIEMPRE agregamos el slash.
-            // Ya no le exigimos que la longitud sea mayor a 2.
             if (i == 1) out += "/"
         }
 

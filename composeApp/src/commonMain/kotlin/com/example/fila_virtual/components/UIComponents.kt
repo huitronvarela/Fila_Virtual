@@ -368,3 +368,43 @@ fun PasswordStrengthBar(password: String) {
         )
     }
 }
+
+@Composable
+fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "¿Qué se te antoja hoy?"
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = {
+            Text(
+                text = placeholder,
+                color = MediumGray,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Buscar",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 50.dp), // Altura mínima para que sea fácil de tocar
+        shape = RoundedCornerShape(16.dp), // Bordes bien redondeados
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary, // Borde de color primario al escribir
+            unfocusedBorderColor = Color.Transparent, // Sin borde cuando no se usa
+            focusedContainerColor = ExtraLightGray,
+            unfocusedContainerColor = ExtraLightGray,
+            focusedTextColor = MaterialTheme.colorScheme.onBackground,
+            unfocusedTextColor = MaterialTheme.colorScheme.onBackground
+        )
+    )
+}

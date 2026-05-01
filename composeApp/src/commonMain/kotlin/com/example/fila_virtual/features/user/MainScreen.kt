@@ -18,6 +18,7 @@ import com.example.fila_virtual.Perfil.ProfileComponent
 import com.example.fila_virtual.features.user.home.HomeView
 import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen
+import com.example.fila_virtual.features.user.carrio_compra.CartScreen
 import kotlinx.coroutines.launch
 
 // Importamos el tema para los colores estandarizados
@@ -33,23 +34,25 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(pageCount = { 4 })
 
-    // ESTADO PARA NAVEGACIÓN A EDICIÓN
+    // ESTADOS PARA NAVEGACIÓN
     var isEditingProfile by remember { mutableStateOf(false) }
+    var showCart by remember { mutableStateOf(false) }
 
-    // Si el usuario está editando, mostramos la pantalla completa SIN la barra inferior
+    // Prioridad de navegación: Edición > Carrito > Pantalla Principal
     if (isEditingProfile) {
         EditProfileScreen(
             usuario = usuario,
             viewModel = viewModel,
             onBack = { isEditingProfile = false }
         )
+    } else if (showCart) {
+        CartScreen(onBackClick = { showCart = false })
     } else {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val windowSize = WindowSize(maxWidth, maxHeight)
             val horizontalMargin = if (windowSize.isTablet) (maxWidth - 550.dp) / 2 else 0.dp
 
             Scaffold(
-                // Aplicamos el color de fondo estandarizado al Scaffold
                 containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
                     BottomNavigationBar(
@@ -66,7 +69,6 @@ fun MainScreen(
                         .fillMaxSize()
                         .padding(padding)
                         .padding(horizontal = horizontalMargin)
-                        // Utilizamos el color del tema en lugar de Color.White
                         .background(MaterialTheme.colorScheme.background)
                 ) {
                     if (isLoading && usuario == null) {
@@ -81,7 +83,10 @@ fun MainScreen(
                             userScrollEnabled = true
                         ) { page ->
                             when (page) {
-                                0 -> HomeView(usuario)
+                                0 -> HomeView(
+                                    usuario = usuario,
+                                    onCartClick = { showCart = true }
+                                )
                                 1 -> OrdenesScreen()
                                 2 -> BilleteraScreen(viewModel)
                                 3 -> ProfileComponent(

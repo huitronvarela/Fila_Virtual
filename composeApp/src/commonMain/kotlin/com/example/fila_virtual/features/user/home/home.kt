@@ -24,11 +24,12 @@ import com.example.fila_virtual.data.Usuario
 
 // Importamos tus componentes reutilizables y utilidades
 import com.example.fila_virtual.components.InputField
+import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 
 @Composable
-fun HomeView(usuario: Usuario?) {
+fun HomeView(usuario: Usuario?, onCartClick: () -> Unit) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24).value.dp
 
@@ -39,20 +40,17 @@ fun HomeView(usuario: Usuario?) {
     ) {
         // --- SECCIÓN FIJA (No se mueve al hacer scroll) ---
         Spacer(modifier = Modifier.height(16.dp))
-        HomeHeader(padding = horizontalPadding)
+        HomeHeader(padding = horizontalPadding, onCartClick = onCartClick)
         Spacer(modifier = Modifier.height(16.dp))
 
         // Uso de tu componente reutilizable InputField
         var searchQuery by remember { mutableStateOf("") }
-//        Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-//            InputField(
-//                label = "¿Qué se te antoja hoy?",
-//                value = searchQuery,
-//                onValueChange = { searchQuery = it },
-//                leadingIcon = Icons.Default.Search,
-//                modifier = Modifier.fillMaxWidth()
-//            )
-//        }
+        Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it }
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         // --- SECCIÓN DESPLAZABLE (Contenido principal) ---
@@ -82,7 +80,7 @@ fun HomeView(usuario: Usuario?) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeHeader(padding: Dp) {
+fun HomeHeader(padding: Dp, onCartClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -109,7 +107,7 @@ fun HomeHeader(padding: Dp) {
                 modifier = Modifier
                     .size(45.dp)
                     .clip(CircleShape)
-                    .clickable { /* Acción al abrir carrito */ },
+                    .clickable { onCartClick() },
                 color = BorderGray.copy(alpha = 0.4f)
             ) {
                 Icon(
@@ -177,7 +175,7 @@ fun CategoryRow(padding: Dp) {
                         imageVector = icon,
                         contentDescription = name,
                         modifier = Modifier.padding(20.dp),
-                        tint = Color(0xFFA93226)
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))

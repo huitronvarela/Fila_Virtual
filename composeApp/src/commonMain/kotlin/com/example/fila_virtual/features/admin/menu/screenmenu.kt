@@ -1,5 +1,6 @@
 package com.example.fila_virtual.features.admin.menu
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,35 +21,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.data.Producto
+import com.example.fila_virtual.features.admin.ProductoViewModel
 
-// Modelo de datos temporal para la vista
-data class MenuItemUi(
-    val id: String,
-    val nombre: String,
-    val precio: Double,
-    var disponible: Boolean
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenMenu(onNavigateToAdd: () -> Unit) {
+fun ScreenMenu(
+    establecimientoId: String,
+    onNavigateToAdd: () -> Unit,
+    viewModel: ProductoViewModel = viewModel()
+) {
     var searchQuery by remember { mutableStateOf("") }
-    val categorias = listOf("All", "Entradas", "Platos Fuertes", "Bebidas")
+    val categorias = listOf("Todos", "Entradas", "Platos Fuertes", "Bebidas", "Postres")
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
 
-    // Lista temporal
-    val menuItems = remember { mutableStateListOf(
-        MenuItemUi("1", "Ensalada de Verano", 12.50, true),
-        MenuItemUi("2", "Hamburguesa Especial", 15.00, true)
-    )}
+    // Sincronizar el establecimientoId con el ViewModel para cargar los productos reales
+    LaunchedEffect(establecimientoId) {
+        if (establecimientoId.isNotEmpty()) {
+            viewModel.setEstablecimientoId(establecimientoId)
+        }
+    }
+
+    // Observamos los productos del establecimiento desde Firebase
+    val productos by viewModel.productos.collectAsState()
+
+    // Filtrado dinámico por categoría y búsqueda
+    val productosFiltrados = productos.filter { producto ->
+        val matchesCategory = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
+        val matchesSearch = producto.nombre.contains(searchQuery, ignoreCase = true)
+        matchesCategory && matchesSearch
+    }
 
     Scaffold(
         containerColor = LightBackground,
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onNavigateToAdd, // Llama al callback que definimos en AdminMainScreen
+                onClick = onNavigateToAdd,
                 containerColor = PrimaryOrange,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp)
@@ -63,11 +72,11 @@ fun ScreenMenu(onNavigateToAdd: () -> Unit) {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            // --- TÍTULO UNIFICADO ---
+            // Título de la sección
             Text(
                 text = "Gestión de Menú",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = DarkGray,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -75,15 +84,15 @@ fun ScreenMenu(onNavigateToAdd: () -> Unit) {
                     .padding(top = 24.dp, bottom = 16.dp)
             )
 
-            // Componente SearchBar
+            // Buscador funcional
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                placeholder = "Buscar platillos, ingredientes...",
+                placeholder = "Buscar platillos...",
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Pestañas
+            // Chips de categorías horizontal
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -95,7 +104,7 @@ fun ScreenMenu(onNavigateToAdd: () -> Unit) {
                         color = if (isSelected) PrimaryOrange else Color.White,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.clickable { categoriaSeleccionada = categoria },
-                        shadowElevation = 0.dp
+                        border = if (!isSelected) BorderStroke(1.dp, BorderGray) else null
                     ) {
                         Text(
                             text = categoria,
@@ -108,22 +117,35 @@ fun ScreenMenu(onNavigateToAdd: () -> Unit) {
                 }
             }
 
-            // Lista de Platillos
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 80.dp)
-            ) {
-                items(menuItems) { item ->
-                    CardMenuItem(
-                        item = item,
-                        onCheckedChange = { isChecked ->
-                            val index = menuItems.indexOf(item)
-                            if (index != -1) {
-                                menuItems[index] = item.copy(disponible = isChecked)
-                            }
-                        }
+            // Lista de Platillos o Estado Vacío
+            if (productosFiltrados.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = if (establecimientoId.isEmpty()) 
+                            "Selecciona un establecimiento en Inicio para ver su menú" 
+                        else if (searchQuery.isEmpty()) 
+                            "No hay platillos registrados aún" 
+                        else 
+                            "No se encontraron resultados para '$searchQuery'",
+                        color = MediumGray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
                     )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    items(productosFiltrados) { producto ->
+                        CardMenuItem(
+                            producto = producto,
+                            onToggleDisponibilidad = { disponible ->
+                                viewModel.actualizarDisponibilidad(producto.id, disponible)
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -131,12 +153,15 @@ fun ScreenMenu(onNavigateToAdd: () -> Unit) {
 }
 
 @Composable
-fun CardMenuItem(item: MenuItemUi, onCheckedChange: (Boolean) -> Unit) {
+fun CardMenuItem(
+    producto: Producto,
+    onToggleDisponibilidad: (Boolean) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -144,42 +169,50 @@ fun CardMenuItem(item: MenuItemUi, onCheckedChange: (Boolean) -> Unit) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Placeholder de imagen
             Box(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(DarkGray),
+                    .background(ExtraLightGray),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Fastfood, contentDescription = null, tint = Color.White)
+                Icon(Icons.Default.Fastfood, contentDescription = null, tint = MediumGray)
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // Info del platillo
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.nombre,
+                    text = producto.nombre,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "$${item.precio}0",
+                    text = producto.categoria,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MediumGray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$${producto.precio}",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TrafficRed
+                    color = PrimaryOrange
                 )
             }
 
+            // Switch de disponibilidad
             Switch(
-                checked = item.disponible,
-                onCheckedChange = onCheckedChange,
+                checked = producto.disponible,
+                onCheckedChange = onToggleDisponibilidad,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = PrimaryOrange,
-                    uncheckedThumbColor = MediumGray,
-                    uncheckedTrackColor = ExtraLightGray,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = MediumGray,
                     uncheckedBorderColor = Color.Transparent
                 )
             )
@@ -188,7 +221,7 @@ fun CardMenuItem(item: MenuItemUi, onCheckedChange: (Boolean) -> Unit) {
 
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Editar platillo",
+                contentDescription = "Editar",
                 tint = MediumGray
             )
         }

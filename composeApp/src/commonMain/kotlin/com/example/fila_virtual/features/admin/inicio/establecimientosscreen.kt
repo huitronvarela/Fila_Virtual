@@ -31,6 +31,7 @@ fun EstablecimientosScreen(
     onBack: () -> Unit,
     onSelectEstablecimiento: (String) -> Unit,
     onRegisterNew: () -> Unit,
+    onAddDish: (String) -> Unit,
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
@@ -128,15 +129,17 @@ fun EstablecimientosScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(
                         start = horizontalPadding,
+                        top = 8.dp,
                         end = horizontalPadding,
-                        bottom = 100.dp,
-                        top = 8.dp
+                        bottom = 100.dp
                     )
                 ) {
                     items(listaFiltrada) { local ->
                         EstablecimientoCard(
                             establecimiento = local,
-                            onClick = { onSelectEstablecimiento(local.id) }
+                            onClick = { onSelectEstablecimiento(local.id) },
+                            onAddDish = { onAddDish(local.id) },
+                            onToggleActive = { viewModel.actualizarEstado(local.id, it) }
                         )
                     }
                 }
@@ -148,7 +151,9 @@ fun EstablecimientosScreen(
 @Composable
 fun EstablecimientoCard(
     establecimiento: Establecimiento,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onAddDish: () -> Unit,
+    onToggleActive: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -236,92 +241,68 @@ fun EstablecimientoCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. Estadísticas
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Columna Izquierda (Ventas)
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "VENTAS HOY",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MediumGray
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "$1,240", // Nota: Mock de diseño
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkGray
-                    )
-                }
-
-                // Separador Vertical
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(35.dp)
-                        .background(BorderGray)
-                )
-
-                // Columna Derecha (Órdenes)
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 16.dp)
-                ) {
-                    Text(
-                        text = "ÓRDENES ACTIVAS",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MediumGray
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "14", // Nota: Mock de diseño
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryOrange
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 4. Switch Activo/Inactivo y Botón Editar
+            // 4. Switch Activo/Inactivo y Botones de Acción
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Switch(
-                    checked = establecimiento.activo,
-                    onCheckedChange = { /* TODO: Actualizar estado en Firebase */ },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = PrimaryOrange,
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = MediumGray,
-                        uncheckedBorderColor = Color.Transparent
-                    )
-                )
-
-                Surface(
-                    onClick = onClick,
-                    shape = RoundedCornerShape(12.dp),
-                    color = PrimaryOrange.copy(alpha = 0.1f)
-                ) {
-                    Box(modifier = Modifier.padding(12.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar",
-                            tint = PrimaryOrange,
-                            modifier = Modifier.size(20.dp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = establecimiento.activo,
+                        onCheckedChange = { onToggleActive(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = PrimaryOrange,
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = MediumGray,
+                            uncheckedBorderColor = Color.Transparent
                         )
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = if (establecimiento.activo) "Activo" else "Inactivo",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (establecimiento.activo) PrimaryOrange else MediumGray,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Row {
+                    // Botón rápido para agregar platillo (estilo similar al de agregarmenu)
+                    Surface(
+                        onClick = onAddDish,
+                        shape = RoundedCornerShape(12.dp),
+                        color = PrimaryOrange.copy(alpha = 0.1f)
+                    ) {
+                        Box(modifier = Modifier.padding(12.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.PlaylistAdd,
+                                contentDescription = "Añadir Platillo",
+                                tint = PrimaryOrange,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Botón para Editar / Ver Detalles
+                    Surface(
+                        onClick = onClick,
+                        shape = RoundedCornerShape(12.dp),
+                        color = PrimaryOrange.copy(alpha = 0.1f)
+                    ) {
+                        Box(modifier = Modifier.padding(12.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar",
+                                tint = PrimaryOrange,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }

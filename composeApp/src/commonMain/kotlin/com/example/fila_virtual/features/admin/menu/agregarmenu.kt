@@ -5,39 +5,128 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.FormImagePicker
 import com.example.fila_virtual.components.FormTextField
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.features.admin.FormState
+import com.example.fila_virtual.features.admin.ProductoViewModel
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AgregarPlatilloScreen(
+    establecimientoId: String,
     onBack: () -> Unit,
-    onSave: (nombre: String, descripcion: String, precio: Double, categoria: String) -> Unit
+    viewModel: ProductoViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var precio by remember { mutableStateOf("") }
 
     val categorias = listOf("Entradas", "Platos Fuertes", "Bebidas", "Postres")
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
+    
+    var showSuccessSheet by remember { mutableStateOf(false) }
+
+    // Modal de éxito (Bottom Sheet)
+    if (showSuccessSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { 
+                showSuccessSheet = false
+                viewModel.resetState()
+                onBack() 
+            },
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = PrimaryOrange,
+                    modifier = Modifier.size(80.dp)
+                )
+                
+                Text(
+                    text = "¡Platillo Guardado!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGray,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MediumGray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Button(
+                    onClick = { 
+                        showSuccessSheet = false
+                        viewModel.resetState()
+                        onBack() 
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        "Entendido",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
 
     BaseFormScreen(
         title = "Agregar Platillo",
         onBack = onBack,
         onSave = {
-            val precioDouble = precio.toDoubleOrNull() ?: 0.0
-            onSave(nombre, descripcion, precioDouble, categoriaSeleccionada)
+            if (nombre.isNotBlank() && precio.isNotBlank()) {
+                val precioDouble = precio.toDoubleOrNull() ?: 0.0
+                viewModel.guardarProducto(
+                    establecimientoId = establecimientoId,
+                    nombre = nombre,
+                    descripcion = descripcion,
+                    precio = precioDouble,
+                    categoria = categoriaSeleccionada,
+                    onSuccess = {
+                        showSuccessSheet = true
+                    }
+                )
+            }
         },
-        saveButtonText = "Guardar Platillo"
+        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else "Guardar Platillo"
     ) {
         FormImagePicker(
             label = "IMAGEN DEL PLATILLO",
@@ -114,6 +203,14 @@ fun AgregarPlatilloScreen(
                     )
                 }
             }
+        }
+
+        if (uiState is FormState.Error) {
+            Text(
+                text = (uiState as FormState.Error).message,
+                color = TrafficRed,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }

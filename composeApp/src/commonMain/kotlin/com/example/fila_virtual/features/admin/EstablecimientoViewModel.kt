@@ -36,6 +36,16 @@ class EstablecimientoViewModel : ViewModel() {
             }
         }
     }
+
+    fun actualizarEstado(id: String, activo: Boolean) {
+        viewModelScope.launch {
+            repository.actualizarEstado(id, activo)
+        }
+    }
+
+    fun resetState() {
+        _uiState.value = FormState.Idle
+    }
 }
 
 sealed class FormState {

@@ -12,6 +12,7 @@ import com.example.fila_virtual.Perfil.ProfileComponent
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
 import com.example.fila_virtual.core.WindowSize
+import com.example.fila_virtual.features.admin.empleados.AñadirEmpleadoScreen
 import com.example.fila_virtual.features.admin.empleados.ScreenEmpleados
 import com.example.fila_virtual.features.admin.inicio.AñadirEstablecimientoScreen
 import com.example.fila_virtual.features.admin.inicio.EstablecimientosScreen
@@ -33,17 +34,21 @@ fun AdminMainScreen(
 
     var isEditingProfile by remember { mutableStateOf(false) }
     var isAddingDish by remember { mutableStateOf(false) }
+    var isAddingEmployee by remember { mutableStateOf(false) }
     var isManagingEstablecimientos by remember { mutableStateOf(false) }
     var isAddingEstablecimiento by remember { mutableStateOf(false) }
+    
+    var selectedEstablecimientoId by remember { mutableStateOf("") }
 
-    // 1. Decidimos qué pantalla mostrar a nivel raíz
     if (isAddingDish) {
         AgregarPlatilloScreen(
-            onBack = { isAddingDish = false },
-            onSave = { nombre, desc, precio, cat ->
-                // Aquí irá tu lógica de Firebase más adelante
-                isAddingDish = false
-            }
+            establecimientoId = selectedEstablecimientoId,
+            onBack = { isAddingDish = false }
+        )
+    } else if (isAddingEmployee) {
+        AñadirEmpleadoScreen(
+            establecimientoId = selectedEstablecimientoId,
+            onBack = { isAddingEmployee = false }
         )
     } else if (isEditingProfile) {
         EditProfileScreen(
@@ -59,10 +64,17 @@ fun AdminMainScreen(
         EstablecimientosScreen(
             onBack = { isManagingEstablecimientos = false },
             onSelectEstablecimiento = { id ->
-                // Lógica para seleccionar establecimiento
+                selectedEstablecimientoId = id
+                isManagingEstablecimientos = false
+                scope.launch { pagerState.animateScrollToPage(2) }
             },
             onRegisterNew = {
                 isAddingEstablecimiento = true
+            },
+            onAddDish = { id -> // <--- CONFIGURACIÓN DEL NUEVO BOTÓN
+                selectedEstablecimientoId = id
+                isAddingDish = true // Redirige a AgregarPlatilloScreen
+                isManagingEstablecimientos = false
             }
         )
     } else {
@@ -85,8 +97,23 @@ fun AdminMainScreen(
                     0 -> InicioAdminScreen(
                         onNavigateToManage = { isManagingEstablecimientos = true }
                     )
-                    1 -> ScreenEmpleados()
-                    2 -> ScreenMenu(onNavigateToAdd = { isAddingDish = true })
+                    1 -> ScreenEmpleados(
+                        onNavigateToAdd = { 
+                            if (selectedEstablecimientoId.isNotEmpty()) {
+                                isAddingEmployee = true
+                            }
+                        }
+                    )
+                    2 -> ScreenMenu(
+                        establecimientoId = selectedEstablecimientoId,
+                        onNavigateToAdd = {
+                            if (selectedEstablecimientoId.isNotEmpty()) {
+                                isAddingDish = true
+                            } else {
+                                isAddingDish = true
+                            }
+                        }
+                    )
                     3 -> ProfileComponent(
                         usuario = usuario,
                         viewModel = viewModel,

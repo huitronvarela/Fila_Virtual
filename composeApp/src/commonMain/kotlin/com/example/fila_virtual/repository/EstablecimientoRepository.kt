@@ -23,6 +23,15 @@ class EstablecimientoRepository {
         }
     }
 
+    suspend fun actualizarEstado(id: String, activo: Boolean): Result<Unit> {
+        return try {
+            establecimientosRef.document(id).update("activo", activo).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun getEstablecimientos(): Flow<List<Establecimiento>> = callbackFlow {
         val subscription = establecimientosRef.addSnapshotListener { snapshot, error ->
             if (error != null) {

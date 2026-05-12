@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,7 +37,6 @@ fun AñadirEstablecimientoScreen(
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
-    var activo by remember { mutableStateOf(true) }
     
     // Horario
     var apertura by remember { mutableStateOf("09:00 AM") }
@@ -46,6 +46,7 @@ fun AñadirEstablecimientoScreen(
     var showAperturaPicker by remember { mutableStateOf(false) }
     var showCierrePicker by remember { mutableStateOf(false) }
     var showImageSheet by remember { mutableStateOf(false) }
+    var showSuccessSheet by remember { mutableStateOf(false) }
 
     val timePickerStateApertura = rememberTimePickerState(initialHour = 9, initialMinute = 0)
     val timePickerStateCierre = rememberTimePickerState(initialHour = 22, initialMinute = 0)
@@ -59,6 +60,77 @@ fun AñadirEstablecimientoScreen(
         val amPm = if (hour < 12) "AM" else "PM"
         val h = if (hour % 12 == 0) 12 else hour % 12
         return "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
+    }
+
+    // Modal de éxito (Bottom Sheet)
+    if (showSuccessSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { 
+                showSuccessSheet = false
+                viewModel.resetState()
+                onBack() 
+            },
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .padding(bottom = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = PrimaryOrange,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                
+                Text(
+                    text = "¡Establecimiento Guardado!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGray,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "El establecimiento se ha guardado correctamente como inactivo. Puedes activarlo desde la lista principal de establecimientos.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MediumGray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Button(
+                    onClick = { 
+                        showSuccessSheet = false
+                        viewModel.resetState()
+                        onBack() 
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        "Entendido",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+        }
     }
 
     // Diálogo de selección de hora (Apertura)
@@ -148,7 +220,7 @@ fun AñadirEstablecimientoScreen(
                     nombre = nombre,
                     descripcion = descripcion,
                     ubicacion = Ubicacion(direccion = direccion),
-                    activo = activo,
+                    activo = false, // Se guarda como no activado por defecto
                     categorias = categoriasSeleccionadas,
                     horario = mapOf(
                         "todos" to HorarioDia(apertura = apertura, cierre = cierre)
@@ -157,7 +229,7 @@ fun AñadirEstablecimientoScreen(
                     updatedAt = System.currentTimeMillis()
                 )
                 viewModel.guardarEstablecimiento(nuevo) {
-                    onBack()
+                    showSuccessSheet = true
                 }
             }
         },
@@ -187,33 +259,12 @@ fun AñadirEstablecimientoScreen(
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Información General",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkGray
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Switch(
-                            checked = activo,
-                            onCheckedChange = { activo = it },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = PrimaryOrange,
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = MediumGray,
-                                uncheckedBorderColor = Color.Transparent
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Activo", color = DarkGray, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
+                Text(
+                    text = "Información General",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGray
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -308,8 +359,7 @@ fun AñadirEstablecimientoScreen(
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                            verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Add, contentDescription = null, tint = DarkGray, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(text = "Añadir", color = DarkGray, fontSize = 14.sp)

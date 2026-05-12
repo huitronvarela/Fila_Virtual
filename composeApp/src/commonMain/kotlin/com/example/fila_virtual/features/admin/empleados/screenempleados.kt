@@ -30,7 +30,7 @@ data class EmpleadoUi(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenEmpleados() {
+fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
     val listaEjemplo = listOf(
         EmpleadoUi(uid = "1", nombre = "Carlos Ruiz", rol = "Cocinero", activo = true),
         EmpleadoUi(uid = "2", nombre = "Sofía Méndez", rol = "Cajera", activo = false),
@@ -44,7 +44,7 @@ fun ScreenEmpleados() {
         containerColor = LightBackground,
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Lógica */ },
+                onClick = onNavigateToAdd,
                 containerColor = PrimaryOrange,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp)

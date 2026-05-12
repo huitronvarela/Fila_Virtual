@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 
-    // --- LÍNEA NUEVA PARA FIREBASE ---
     id("com.google.gms.google-services")
     alias(libs.plugins.kotlinSerialization)
 }
@@ -31,6 +30,7 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            // Aquí sí van las cosas exclusivas de Android
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
 
@@ -39,42 +39,42 @@ kotlin {
             implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
             implementation("com.google.firebase:firebase-firestore-ktx:24.10.1")
 
-            // Motor Ktor para Android (Asegúrate de que esté en libs.versions.toml)
             implementation(libs.ktor.client.okhttp)
-
-            // 1. Esto soluciona el error "(Kotlin reflection is not available)"
             implementation(kotlin("reflect"))
         }
+
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
+            // 1. Interfaz Multiplataforma (Usamos compose.* en lugar de libs.compose.*)
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(compose.materialIconsExtended)
 
-            // Firebase KMP
+            // 2. Lifecycle adaptado para KMP
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
+
+            // 3. Firebase KMP (Incluyendo la nueva librería de functions)
             implementation("dev.gitlive:firebase-auth:1.11.1")
             implementation("dev.gitlive:firebase-firestore:1.11.1")
+            implementation("dev.gitlive:firebase-functions:1.11.1")
+
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-            
-            // 2. Manejo de Fechas y Reloj (CORRECCIÓN UNRESOLVED CLOCK)
             implementation(libs.kotlinx.datetime)
 
+            // 4. Red y Ktor
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-            implementation("io.ktor:ktor-client-logging:2.3.12") // Añadir esto
-            // Imagenes y Red
+            implementation("io.ktor:ktor-client-logging:2.3.12")
+            implementation(libs.ktor.client.cio)
+
+            // 5. Imagenes
             implementation(libs.kamel.image)
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
-            implementation(libs.ktor.client.cio) // Motor de reserva
         }
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
@@ -91,7 +91,6 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
-        // Eliminamos la línea de ktor que estaba causando el error aquí
     }
     packaging {
         resources {

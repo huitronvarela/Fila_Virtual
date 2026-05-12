@@ -24,6 +24,16 @@ object RolEmpleado {
     const val GERENTE = "gerente"
 }
 
+// NUEVA CLASE: Estructura de datos para guardar la tarjeta real
+@Serializable
+data class TarjetaGuardada(
+    val ultimos4: String = "",
+    val marca: String = "",
+    val nombreTitular: String = "",
+    val expiracion: String = "",
+    val tokenId: String = ""
+)
+
 @Serializable
 data class Usuario(
     val nombre: String = "",
@@ -31,7 +41,7 @@ data class Usuario(
     val telefono: String = "",
     val fotoUrl: String = "",
     val rolGlobal: String = Roles.CLIENTE,
-    val metodosPago: List<String> = emptyList(),
+    val metodosPago: List<TarjetaGuardada> = emptyList(), // Actualizado para usar la nueva clase
     val verificado: Boolean = false,
     val activo: Boolean = true,
     val createdAt: Long = 0L,

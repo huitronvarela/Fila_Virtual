@@ -51,12 +51,12 @@ fun FormularioTarjetaScreen(
             value = viewModel.numeroTarjeta,
             onValueChange = { viewModel.onNumeroTarjetaChange(it.filter { char -> char.isDigit() }) },
             label = { Text("Número de la tarjeta", style = typography.bodyMedium) },
-            leadingIcon = { 
+            leadingIcon = {
                 Icon(
-                    Icons.Default.CreditCard, 
+                    Icons.Default.CreditCard,
                     contentDescription = null,
                     tint = MediumGray
-                ) 
+                )
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             visualTransformation = CardNumberVisualTransformation(),
@@ -158,12 +158,12 @@ fun FormularioTarjetaScreen(
                 containerColor = colorScheme.primary,
                 contentColor = colorScheme.onPrimary
             ),
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(12.dp), // <-- AQUÍ ESTÁ EL CAMBIO
             enabled = !viewModel.isLoading && viewModel.numeroTarjeta.length == 16 && viewModel.cvv.isNotEmpty()
         ) {
             if (viewModel.isLoading) {
                 CircularProgressIndicator(
-                    color = colorScheme.onPrimary, 
+                    color = colorScheme.onPrimary,
                     modifier = Modifier.size(24.dp)
                 )
             } else {

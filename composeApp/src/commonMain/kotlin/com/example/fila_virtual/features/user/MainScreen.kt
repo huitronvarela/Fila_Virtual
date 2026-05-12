@@ -46,7 +46,11 @@ fun MainScreen(
             onBack = { isEditingProfile = false }
         )
     } else if (showCart) {
-        CartScreen(onBackClick = { showCart = false })
+        // AQUÍ ESTABA EL ERROR: Ya le pasamos el viewModel al Carrito
+        CartScreen(
+            viewModel = viewModel,
+            onBackClick = { showCart = false }
+        )
     } else {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val windowSize = WindowSize(maxWidth, maxHeight)

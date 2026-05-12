@@ -18,36 +18,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.FormHeader
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
-
-// Modelo de datos para la vista
-data class EstablecimientoUi(
-    val id: String,
-    val nombre: String,
-    val direccion: String,
-    val isOpen: Boolean,
-    val imageUrl: String? = null
-)
+import com.example.fila_virtual.data.Establecimiento
+import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 
 @Composable
 fun EstablecimientosScreen(
     onBack: () -> Unit,
     onSelectEstablecimiento: (String) -> Unit,
-    onRegisterNew: () -> Unit
+    onRegisterNew: () -> Unit,
+    viewModel: EstablecimientoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24).value.dp
     var searchQuery by remember { mutableStateOf("") }
 
-    // Lista de ejemplo
-    val listaEstablecimientos = listOf(
-        EstablecimientoUi("1", "Al Toque Manzanillo", "Blvd. Miguel de la Madrid 123", true),
-        EstablecimientoUi("2", "Al Toque Colima", "Av. Constitución 456", false),
-        EstablecimientoUi("3", "Al Toque Villa de Álvarez", "Calle Tercer Anillo 789", true)
-    ).filter { it.nombre.contains(searchQuery, ignoreCase = true) }
+    // Obtenemos la lista real desde el ViewModel
+    val establecimientos by viewModel.establecimientos.collectAsState()
+
+    // Filtramos por búsqueda
+    val listaFiltrada = establecimientos.filter { 
+        it.nombre.contains(searchQuery, ignoreCase = true) 
+    }
 
     Scaffold(
         containerColor = LightBackground,
@@ -75,7 +71,6 @@ fun EstablecimientosScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- Buscador REUTILIZABLE (Mismo componente que Home y Empleados) ---
             Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
                 SearchBar(
                     query = searchQuery,
@@ -87,7 +82,6 @@ fun EstablecimientosScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Subtítulo y Contador (Consistencia con screenempleados.kt) ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -107,7 +101,7 @@ fun EstablecimientosScreen(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
-                        text = "${listaEstablecimientos.size} TOTAL",
+                        text = "${listaFiltrada.size} TOTAL",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -118,22 +112,33 @@ fun EstablecimientosScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- SECCIÓN DESPLAZABLE: Lista de Establecimientos ---
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(
-                    start = horizontalPadding,
-                    end = horizontalPadding,
-                    bottom = 100.dp,
-                    top = 8.dp
-                )
-            ) {
-                items(listaEstablecimientos) { local ->
-                    EstablecimientoCard(
-                        establecimiento = local,
-                        onClick = { onSelectEstablecimiento(local.id) }
+            if (listaFiltrada.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (searchQuery.isEmpty()) "No hay establecimientos registrados" else "No se encontraron resultados",
+                        color = MediumGray
                     )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(
+                        start = horizontalPadding,
+                        end = horizontalPadding,
+                        bottom = 100.dp,
+                        top = 8.dp
+                    )
+                ) {
+                    items(listaFiltrada) { local ->
+                        EstablecimientoCard(
+                            establecimiento = local,
+                            onClick = { onSelectEstablecimiento(local.id) }
+                        )
+                    }
                 }
             }
         }
@@ -142,7 +147,7 @@ fun EstablecimientosScreen(
 
 @Composable
 fun EstablecimientoCard(
-    establecimiento: EstablecimientoUi,
+    establecimiento: Establecimiento,
     onClick: () -> Unit
 ) {
     Card(
@@ -151,80 +156,175 @@ fun EstablecimientoCard(
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Imagen del Local (Logo)
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            // 1. Imagen y Badge Abierto/Cerrado
             Box(
                 modifier = Modifier
-                    .size(70.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(ExtraLightGray),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(BorderGray) // Fondo gris claro como placeholder
             ) {
+                // Icono por defecto si no hay imagen
                 Icon(
-                    Icons.Default.Storefront,
+                    imageVector = Icons.Default.Storefront,
                     contentDescription = null,
                     tint = MediumGray,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Información del Local
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = establecimiento.nombre,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkGray
-                )
-                Text(
-                    text = establecimiento.direccion,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MediumGray,
-                    maxLines = 1
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(48.dp)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Badge de Estado (Abierto/Cerrado)
+                // Etiqueta "ABIERTO" (basado en si está activo por ahora)
                 Surface(
-                    color = if (establecimiento.isOpen) TrafficGreen.copy(alpha = 0.1f) else TrafficRed.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
+                                .size(8.dp)
                                 .background(
-                                    if (establecimiento.isOpen) TrafficGreen else TrafficRed,
-                                    CircleShape
+                                    color = if (establecimiento.activo) PrimaryOrange else MediumGray,
+                                    shape = CircleShape
                                 )
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (establecimiento.isOpen) "Abierto" else "Cerrado",
-                            color = if (establecimiento.isOpen) TrafficGreen else TrafficRed,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
+                            text = if (establecimiento.activo) "ABIERTO" else "CERRADO",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkGray
                         )
                     }
                 }
             }
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MediumGray
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 2. Información Principal
+            Text(
+                text = establecimiento.nombre.ifEmpty { "Sin Nombre" },
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = DarkGray
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = MediumGray,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = establecimiento.ubicacion.direccion.ifEmpty { "Sin dirección configurada" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MediumGray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. Estadísticas
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Columna Izquierda (Ventas)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "VENTAS HOY",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MediumGray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$1,240", // Nota: Mock de diseño
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray
+                    )
+                }
+
+                // Separador Vertical
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(35.dp)
+                        .background(BorderGray)
+                )
+
+                // Columna Derecha (Órdenes)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 16.dp)
+                ) {
+                    Text(
+                        text = "ÓRDENES ACTIVAS",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MediumGray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "14", // Nota: Mock de diseño
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryOrange
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 4. Switch Activo/Inactivo y Botón Editar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Switch(
+                    checked = establecimiento.activo,
+                    onCheckedChange = { /* TODO: Actualizar estado en Firebase */ },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = PrimaryOrange,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = MediumGray,
+                        uncheckedBorderColor = Color.Transparent
+                    )
+                )
+
+                Surface(
+                    onClick = onClick,
+                    shape = RoundedCornerShape(12.dp),
+                    color = PrimaryOrange.copy(alpha = 0.1f)
+                ) {
+                    Box(modifier = Modifier.padding(12.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar",
+                            tint = PrimaryOrange,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -53,11 +53,7 @@ fun AdminMainScreen(
         )
     } else if (isAddingEstablecimiento) {
         AñadirEstablecimientoScreen(
-            onBack = { isAddingEstablecimiento = false },
-            onSave = { nombre, direccion ->
-                // Aquí irá la lógica para guardar en Firebase
-                isAddingEstablecimiento = false
-            }
+            onBack = { isAddingEstablecimiento = false }
         )
     } else if (isManagingEstablecimientos) {
         EstablecimientosScreen(

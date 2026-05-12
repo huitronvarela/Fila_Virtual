@@ -52,6 +52,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         loadUserData()
     }
 
+
     fun loadUserData() {
         val uid = repository.getCurrentUserUid()
         if (uid != null) {
@@ -59,18 +60,13 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                 isLoading = true
                 errorMessage = ""
                 try {
-                    var data = repository.getUserData(uid)
+                    val data = repository.getUserData(uid)
                     if (data != null) {
-                        if (data.fotoUrl.isEmpty()) {
-                            val firebaseUser = repository.getFirebaseUser()
-                            val googlePhotoUrl = firebaseUser?.photoURL
-                            if (googlePhotoUrl != null) {
-                                data = data.copy(fotoUrl = googlePhotoUrl)
-                            }
-                        }
                         usuario = data
                     } else {
-                        errorMessage = "No se encontraron datos del usuario"
+                        // Si es nulo, es posible que Firestore aún se esté sincronizando
+                        // Podríamos esperar un segundo y reintentar una vez
+                        errorMessage = "Sincronizando datos..."
                     }
                 } catch (e: Exception) {
                     errorMessage = "Error: ${e.message}"

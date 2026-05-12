@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
  * CLIENTE: Usuario que realiza pedidos.
  * ADMIN: Administrador general con acceso a todo el sistema.
  * EMPLEADO: Usuario con permisos específicos en establecimientos.
+ * CLIENTE: Usuario que realiza pedidos.
+ * ADMIN: Administrador general con acceso a todo el sistema.
+ * EMPLEADO: Usuario con permisos específicos en establecimientos.
  */
 object Roles {
     const val CLIENTE = "cliente"
@@ -39,6 +42,7 @@ data class Usuario(
 )
 
 // 2. Sub-colección: establecimientos/{id}/empleados/{uid}
+// 2. Sub-colección: establecimientos/{id}/empleados/{uid}
 @Serializable
 data class Empleado(
     val uid: String = "",
@@ -47,6 +51,7 @@ data class Empleado(
     val joinedAt: Long = 0L
 )
 
+// 3. Colección global: pedidos/{pedidoId}
 // 3. Colección global: pedidos/{pedidoId}
 @Serializable
 data class Pedido(

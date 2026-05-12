@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import com.example.fila_virtual.core.theme.FilaVirtualTheme
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.auth.animacion.AuthContainer
-import com.example.fila_virtual.features.user.MainScreen
+import com.example.fila_virtual.features.MainScreen
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.rememberResponsiveSize
 

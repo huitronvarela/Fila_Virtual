@@ -98,4 +98,12 @@ object NavigationDefaults {
         NavigationItem(stringResource(Res.string.nav_wallet), Icons.Default.AccountBalanceWallet, 2),
         NavigationItem(stringResource(Res.string.nav_profile), Icons.Default.Person, 3)
     )
+
+    @Composable
+    fun adminItems() = listOf(
+        NavigationItem("Inicio", Icons.Default.Dashboard, 0),
+        NavigationItem("Empleados", Icons.Default.People, 1),
+        NavigationItem("Menú", Icons.Default.RestaurantMenu, 2),
+        NavigationItem("Perfil", Icons.Default.Person, 3)
+    )
 }

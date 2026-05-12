@@ -88,27 +88,38 @@ class MainActivity : ComponentActivity() {
             }
     }
 
+    // Archivo: /home/mhuitron/Documentos/git/Fila_Virtual/composeApp/src/androidMain/kotlin/com/example/fila_virtual/MainActivity.kt
+
     private fun saveUserToFirestore(uid: String, name: String?, email: String?, photoUrl: String?) {
         val db = FirebaseFirestore.getInstance()
         val userRef = db.collection("usuarios").document(uid)
 
         userRef.get().addOnSuccessListener { document ->
+            val now = System.currentTimeMillis() // Usamos Long para createdAt/updatedAt
+
             if (!document.exists()) {
+                // Creamos el documento con la estructura exacta de la data class Usuario
                 val userData = hashMapOf(
                     "nombre" to (name ?: "Usuario Google"),
                     "email" to (email ?: ""),
                     "telefono" to "",
-                    "tipoUsuario" to "ALUMNO",
-                    "billetera" to "",
-                    "fechaRegistro" to "02 de marzo de 2026",
-                    "fotoUrl" to photoUrl
+                    "fotoUrl" to (photoUrl ?: ""),
+                    "rolGlobal" to "cliente", // Coincide con Roles.CLIENTE
+                    "metodosPago" to listOf<String>(),
+                    "verificado" to true,    // Los usuarios de Google ya están verificados
+                    "activo" to true,
+                    "createdAt" to now,
+                    "updatedAt" to now
                 )
                 userRef.set(userData)
             } else {
-                // SI YA EXISTE, ACTUALIZAMOS SOLO LA FOTO SI GOOGLE NOS LA DA
+                // Si el usuario ya existe, solo actualizamos la foto y la fecha de última conexión
+                val updates = mutableMapOf<String, Any>()
+                updates["updatedAt"] = now
                 if (photoUrl != null) {
-                    userRef.update("fotoUrl", photoUrl)
+                    updates["fotoUrl"] = photoUrl
                 }
+                userRef.update(updates)
             }
         }
     }

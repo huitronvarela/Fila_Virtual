@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.Perfil.ProfileHeader
+import com.example.fila_virtual.perfil.ProfileHeader
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.core.PhoneVisualTransformation
@@ -29,7 +29,6 @@ import com.example.fila_virtual.core.isValidName
 import com.example.fila_virtual.core.isValidPhone
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Usuario
-import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.PermissionType
 import com.example.fila_virtual.core.rememberPermissionsManager
 import fila_virtual.composeapp.generated.resources.Res

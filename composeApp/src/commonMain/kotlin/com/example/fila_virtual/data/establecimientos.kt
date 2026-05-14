@@ -39,25 +39,7 @@ data class HorarioDia(
     val cerrado: Boolean = false
 )
 
-/**
- * 👥 SUBCOLECCIÓN: Empleados
- * Ruta en Firestore: establecimientos/{establecimientoId}/empleados/{uid}
- */
-@Serializable
-data class Empleado(
-    val uid: String = "",
-    val rol: String = RolEmpleado.CAJERO.name,
-    val activo: Boolean = true,
-    val joinedAt: Long = 0L,
-    val updatedAt: Long = 0L
-)
 
-/**
- * Roles unificados para el personal de los establecimientos.
- */
-enum class RolEmpleado {
-    CAJERO, COCINA, SUPERVISOR, ADMIN, ENTREGA, GERENTE
-}
 
 /**
  * 📋 SUBCOLECCIÓN: Eventos de Auditoría (Bitácora)

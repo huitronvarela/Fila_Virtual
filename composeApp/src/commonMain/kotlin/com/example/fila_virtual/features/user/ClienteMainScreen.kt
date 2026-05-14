@@ -17,7 +17,7 @@ import androidx.compose.runtime.setValue
 import com.example.fila_virtual.core.WindowSize
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
-import com.example.fila_virtual.Perfil.ProfileComponent
+import com.example.fila_virtual.perfil.ProfileComponent
 import com.example.fila_virtual.features.user.home.HomeView
 import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen

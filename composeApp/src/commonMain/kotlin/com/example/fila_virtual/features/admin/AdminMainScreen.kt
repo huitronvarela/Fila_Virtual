@@ -3,16 +3,14 @@ package com.example.fila_virtual.features.admin
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.Perfil.ProfileComponent
+import com.example.fila_virtual.perfil.ProfileComponent
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
-import com.example.fila_virtual.core.WindowSize
-import com.example.fila_virtual.features.admin.empleados.AñadirEmpleadoScreen
+// AQUI ESTA LA IMPORTACION CORRECTA (SIN LA Ñ)
+import com.example.fila_virtual.features.admin.empleados.AnadirEmpleadoScreen
 import com.example.fila_virtual.features.admin.empleados.ScreenEmpleados
 import com.example.fila_virtual.features.admin.inicio.AñadirEstablecimientoScreen
 import com.example.fila_virtual.features.admin.inicio.EstablecimientosScreen
@@ -37,7 +35,7 @@ fun AdminMainScreen(
     var isAddingEmployee by remember { mutableStateOf(false) }
     var isManagingEstablecimientos by remember { mutableStateOf(false) }
     var isAddingEstablecimiento by remember { mutableStateOf(false) }
-    
+
     var selectedEstablecimientoId by remember { mutableStateOf("") }
 
     if (isAddingDish) {
@@ -46,7 +44,8 @@ fun AdminMainScreen(
             onBack = { isAddingDish = false }
         )
     } else if (isAddingEmployee) {
-        AñadirEmpleadoScreen(
+        // AQUI ESTA LA LLAMADA CORRECTA A LA FUNCION (SIN LA Ñ)
+        AnadirEmpleadoScreen(
             establecimientoId = selectedEstablecimientoId,
             onBack = { isAddingEmployee = false }
         )
@@ -71,9 +70,9 @@ fun AdminMainScreen(
             onRegisterNew = {
                 isAddingEstablecimiento = true
             },
-            onAddDish = { id -> // <--- CONFIGURACIÓN DEL NUEVO BOTÓN
+            onAddDish = { id ->
                 selectedEstablecimientoId = id
-                isAddingDish = true // Redirige a AgregarPlatilloScreen
+                isAddingDish = true
                 isManagingEstablecimientos = false
             }
         )
@@ -98,20 +97,14 @@ fun AdminMainScreen(
                         onNavigateToManage = { isManagingEstablecimientos = true }
                     )
                     1 -> ScreenEmpleados(
-                        onNavigateToAdd = { 
-                            if (selectedEstablecimientoId.isNotEmpty()) {
-                                isAddingEmployee = true
-                            }
+                        onNavigateToAdd = {
+                            isAddingEmployee = true
                         }
                     )
                     2 -> ScreenMenu(
                         establecimientoId = selectedEstablecimientoId,
                         onNavigateToAdd = {
-                            if (selectedEstablecimientoId.isNotEmpty()) {
-                                isAddingDish = true
-                            } else {
-                                isAddingDish = true
-                            }
+                            isAddingDish = true
                         }
                     )
                     3 -> ProfileComponent(

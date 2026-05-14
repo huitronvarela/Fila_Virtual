@@ -17,7 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+// Eliminamos la importación que estaba causando el problema en rojo
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.FormImagePicker
 import com.example.fila_virtual.components.FormTextField
@@ -29,27 +29,30 @@ import com.example.fila_virtual.features.admin.ProductoViewModel
 @Composable
 fun AgregarPlatilloScreen(
     establecimientoId: String,
-    onBack: () -> Unit,
-    viewModel: ProductoViewModel = viewModel()
+    onBack: () -> Unit
+    // Quitamos el parámetro viewModel de aquí para evitar el error
 ) {
+    // 👇 SOLUCIÓN DEFINITIVA: Creamos el ViewModel directamente aquí
+    val viewModel = remember { ProductoViewModel() }
+
     val uiState by viewModel.uiState.collectAsState()
-    
+
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var precio by remember { mutableStateOf("") }
 
     val categorias = listOf("Entradas", "Platos Fuertes", "Bebidas", "Postres")
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
-    
+
     var showSuccessSheet by remember { mutableStateOf(false) }
 
     // Modal de éxito (Bottom Sheet)
     if (showSuccessSheet) {
         ModalBottomSheet(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showSuccessSheet = false
                 viewModel.resetState()
-                onBack() 
+                onBack()
             },
             containerColor = Color.White
         ) {
@@ -66,7 +69,7 @@ fun AgregarPlatilloScreen(
                     tint = PrimaryOrange,
                     modifier = Modifier.size(80.dp)
                 )
-                
+
                 Text(
                     text = "¡Platillo Guardado!",
                     style = MaterialTheme.typography.titleLarge,
@@ -74,9 +77,9 @@ fun AgregarPlatilloScreen(
                     color = DarkGray,
                     textAlign = TextAlign.Center
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 Text(
                     text = "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -84,14 +87,14 @@ fun AgregarPlatilloScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
+
                 Button(
-                    onClick = { 
+                    onClick = {
                         showSuccessSheet = false
                         viewModel.resetState()
-                        onBack() 
+                        onBack()
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
@@ -120,6 +123,7 @@ fun AgregarPlatilloScreen(
                     descripcion = descripcion,
                     precio = precioDouble,
                     categoria = categoriaSeleccionada,
+                    ownerUid = "",
                     onSuccess = {
                         showSuccessSheet = true
                     }
@@ -180,7 +184,7 @@ fun AgregarPlatilloScreen(
             color = MediumGray
         )
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

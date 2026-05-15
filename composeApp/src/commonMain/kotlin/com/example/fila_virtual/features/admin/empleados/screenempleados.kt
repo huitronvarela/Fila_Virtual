@@ -52,11 +52,12 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar Empleado")
             }
         }
-    ) {
+    ) { paddingValues -> // 👇 CORRECCIÓN 1: Recibir el paddingValues del Scaffold
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(paddingValues) // 👇 CORRECCIÓN 2: Aplicarlo aquí para evitar que el contenido se encime
+                .padding(horizontal = 24.dp) // Un poco más de margen lateral para que coincida con tu diseño
         ) {
             Text(
                 text = "Gestión de Empleados",
@@ -66,14 +67,14 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 16.dp)
+                    .padding(top = 24.dp, bottom = 24.dp)
             )
 
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
                 placeholder = "Buscar empleados...",
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 24.dp)
             )
 
             Row(
@@ -89,7 +90,7 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
                 )
 
                 Surface(
-                    color = BorderGray,
+                    color = BorderGray, // Simulando el fondo grisecito del badge
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
@@ -107,7 +108,8 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 80.dp)
+                // Padding inferior extra para que el último elemento no se esconda detrás del FAB
+                contentPadding = PaddingValues(bottom = 88.dp)
             ) {
                 items(listaEjemplo) { empleado ->
                     CardEmpleado(empleado)
@@ -123,7 +125,7 @@ fun CardEmpleado(empleado: EmpleadoUi) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Un toquecito sutil de sombra
     ) {
         Row(
             modifier = Modifier
@@ -142,6 +144,7 @@ fun CardEmpleado(empleado: EmpleadoUi) {
                     Icon(Icons.Default.Person, contentDescription = null, tint = MediumGray)
                 }
 
+                // El puntito verde/gris de estado
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -169,6 +172,8 @@ fun CardEmpleado(empleado: EmpleadoUi) {
                     color = MediumGray
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // La etiqueta de ACTIVO / INACTIVO
                 val backgroundColor = if (empleado.activo) Color(0xFFE8F5E9) else ExtraLightGray
                 val textColor = if (empleado.activo) TrafficGreen else MediumGray
                 Surface(color = backgroundColor, shape = RoundedCornerShape(8.dp)) {
@@ -181,7 +186,7 @@ fun CardEmpleado(empleado: EmpleadoUi) {
                     )
                 }
             }
-            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = MediumGray)
+            Icon(Icons.Default.ChevronRight, contentDescription = "Ver detalles", tint = MediumGray)
         }
     }
 }

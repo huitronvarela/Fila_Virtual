@@ -46,34 +46,36 @@ kotlin {
             implementation(kotlin("reflect"))
         }
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
+            // Core de Compose usando el plugin nativo
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3) // <-- ¡Esto soluciona el error rojo de Material 3!
+            implementation(compose.ui)
+            implementation(compose.components.resources)
+            implementation(compose.materialIconsExtended)
+
+            // ViewModels y Lifecycle
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.uiToolingPreview)
 
             // Firebase KMP
             implementation("dev.gitlive:firebase-auth:1.11.1")
             implementation("dev.gitlive:firebase-firestore:1.11.1")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-            
-            // 2. Manejo de Fechas y Reloj (CORRECCIÓN UNRESOLVED CLOCK)
+
+            // Fechas y Reloj
             implementation(libs.kotlinx.datetime)
 
+            // Ktor y Serialización (Limpiado para no tener duplicados)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
-            implementation("io.ktor:ktor-client-logging:2.3.12") // Añadir esto
-            // Imagenes y Red
-            implementation(libs.kamel.image)
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.cio) // Motor de reserva
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation("io.ktor:ktor-client-logging:2.3.12")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+            // Imagenes
+            implementation(libs.kamel.image)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -91,7 +93,6 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
-        // Eliminamos la línea de ktor que estaba causando el error aquí
     }
     packaging {
         resources {

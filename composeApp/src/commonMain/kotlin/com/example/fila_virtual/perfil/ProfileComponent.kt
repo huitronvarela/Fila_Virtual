@@ -1,4 +1,4 @@
-package com.example.fila_virtual.Perfil
+package com.example.fila_virtual.perfil
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

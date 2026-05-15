@@ -60,16 +60,16 @@ fun AgregarPlatilloScreen(
 
     val categorias = listOf("Entradas", "Platos Fuertes", "Bebidas", "Postres")
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
-
+    
     var showSuccessSheet by remember { mutableStateOf(false) }
 
     // Modal de éxito (Bottom Sheet)
     if (showSuccessSheet) {
         ModalBottomSheet(
-            onDismissRequest = {
+            onDismissRequest = { 
                 showSuccessSheet = false
                 viewModel.resetState()
-                onBack()
+                onBack() 
             },
             containerColor = Color.White
         ) {
@@ -86,7 +86,7 @@ fun AgregarPlatilloScreen(
                     tint = PrimaryOrange,
                     modifier = Modifier.size(80.dp)
                 )
-
+                
                 Text(
                     text = "¡Platillo Guardado!",
                     style = MaterialTheme.typography.titleLarge,
@@ -94,9 +94,9 @@ fun AgregarPlatilloScreen(
                     color = DarkGray,
                     textAlign = TextAlign.Center
                 )
-
+                
                 Spacer(modifier = Modifier.height(12.dp))
-
+                
                 Text(
                     text = "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -104,14 +104,14 @@ fun AgregarPlatilloScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-
+                
                 Spacer(modifier = Modifier.height(32.dp))
-
+                
                 Button(
-                    onClick = {
+                    onClick = { 
                         showSuccessSheet = false
                         viewModel.resetState()
-                        onBack()
+                        onBack() 
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
@@ -149,8 +149,6 @@ fun AgregarPlatilloScreen(
         },
         saveButtonText = if (uiState is FormState.Loading) "Guardando..." else "Guardar Platillo"
     ) {
-
-        // 1. IMAGEN DEL PLATILLO
         FormImagePicker(
             label = "IMAGEN DEL PLATILLO",
             onClick = { /* Selector de imagen */ }
@@ -158,7 +156,6 @@ fun AgregarPlatilloScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. NOMBRE DEL PLATILLO
         FormTextField(
             label = "NOMBRE DEL PLATILLO",
             value = nombre,
@@ -168,7 +165,6 @@ fun AgregarPlatilloScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. DESCRIPCIÓN
         FormTextField(
             label = "DESCRIPCIÓN",
             value = descripcion,
@@ -180,7 +176,6 @@ fun AgregarPlatilloScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 4. PRECIO
         FormTextField(
             label = "PRECIO",
             value = precio,
@@ -270,7 +265,7 @@ fun AgregarPlatilloScreen(
             color = MediumGray
         )
         Spacer(modifier = Modifier.height(8.dp))
-
+        
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

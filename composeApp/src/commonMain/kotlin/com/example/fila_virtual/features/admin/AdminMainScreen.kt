@@ -73,9 +73,9 @@ fun AdminMainScreen(
             onRegisterNew = {
                 isAddingEstablecimiento = true
             },
-            onAddDish = { id -> 
+            onAddDish = { id ->
                 selectedEstablecimientoId = id
-                isAddingDish = true 
+                isAddingDish = true
                 isManagingEstablecimientos = false
             }
         )

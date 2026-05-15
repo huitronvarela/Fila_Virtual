@@ -8,11 +8,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.Perfil.ProfileComponent
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
 import com.example.fila_virtual.core.WindowSize
-import com.example.fila_virtual.features.admin.empleados.AñadirEmpleadoScreen
+import com.example.fila_virtual.features.admin.empleados.AnadirEmpleadoScreen
 import com.example.fila_virtual.features.admin.empleados.ScreenEmpleados
 import com.example.fila_virtual.features.admin.inicio.AñadirEstablecimientoScreen
 import com.example.fila_virtual.features.admin.inicio.EstablecimientosScreen
@@ -21,6 +20,7 @@ import com.example.fila_virtual.features.admin.menu.AgregarPlatilloScreen
 import com.example.fila_virtual.features.admin.menu.ScreenMenu
 import com.example.fila_virtual.features.user.EditProfileScreen
 import com.example.fila_virtual.features.user.UserViewModel
+import com.example.fila_virtual.perfil.ProfileComponent
 import kotlinx.coroutines.launch
 
 @Composable
@@ -47,7 +47,7 @@ fun AdminMainScreen(
             onBack = { isAddingDish = false }
         )
     } else if (isAddingEmployee) {
-        AñadirEmpleadoScreen(
+        AnadirEmpleadoScreen(
             establecimientoId = selectedEstablecimientoId,
             onBack = { isAddingEmployee = false }
         )
@@ -100,11 +100,11 @@ fun AdminMainScreen(
                         onNavigateToManage = { isManagingEstablecimientos = true }
                     )
                     1 -> ScreenEmpleados(
+                        establecimientoId = selectedEstablecimientoId,
                         onNavigateToAdd = { 
                             if (selectedEstablecimientoId.isNotEmpty()) {
                                 isAddingEmployee = true
-                            }
-                            else {
+                            } else {
                                 isAddingEmployee = true
                             }
                         }

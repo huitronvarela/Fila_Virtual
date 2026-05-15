@@ -11,11 +11,28 @@ import kotlinx.coroutines.launch
 
 class EmpleadoViewModel : ViewModel() {
 
-    // Ya sabe buscarlo en la carpeta repository correcta
     private val repository = EmpleadoRepository()
 
     private val _uiState = MutableStateFlow<FormState>(FormState.Idle)
     val uiState: StateFlow<FormState> = _uiState
+
+    private val _empleados = MutableStateFlow<List<Empleado>>(emptyList())
+    val empleados: StateFlow<List<Empleado>> = _empleados
+
+    fun cargarEmpleados(establecimientoId: String) {
+        viewModelScope.launch {
+            _uiState.value = FormState.Loading
+            val result = repository.obtenerEmpleados(establecimientoId)
+            if (result.isSuccess) {
+                _empleados.value = result.getOrDefault(emptyList())
+                _uiState.value = FormState.Idle
+            } else {
+                _uiState.value = FormState.Error(
+                    result.exceptionOrNull()?.message ?: "Error al cargar empleados"
+                )
+            }
+        }
+    }
 
     fun guardarEmpleado(
         establecimientoId: String,
@@ -46,9 +63,13 @@ class EmpleadoViewModel : ViewModel() {
 
             if (result.isSuccess) {
                 _uiState.value = FormState.Success
+                // Recargar la lista tras registrar exitosamente
+                cargarEmpleados(establecimientoId)
                 onSuccess()
             } else {
-                _uiState.value = FormState.Error(result.exceptionOrNull()?.message ?: "Error al registrar")
+                _uiState.value = FormState.Error(
+                    result.exceptionOrNull()?.message ?: "Error al registrar"
+                )
             }
         }
     }

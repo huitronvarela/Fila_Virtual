@@ -24,6 +24,14 @@ import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 
+// Datos de demostración para el dashboard — en producción vendrían del ViewModel
+private val DEMO_DAYS = listOf("L", "M", "M", "J", "V", "S", "D")
+private val DEMO_VALUES = listOf(0.4f, 0.3f, 0.6f, 0.8f, 1.0f, 0.7f, 0.5f)
+private val DEMO_TOP_PRODUCTS = listOf(
+    TopProduct("Hamburguesa Clásica", "84 unidades vendidas", "$1,250", "+ 5% hoy", TrafficGreen),
+    TopProduct("Pizza Familiar", "22 unidades vendidas", "$2,100", "Sin cambios", MediumGray)
+)
+
 @Composable
 fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
     val windowSize = LocalWindowSize.current
@@ -85,7 +93,7 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                                 text = "Gestionar Establecimientos",
                                 fontWeight = FontWeight.Bold,
                                 color = DarkGray,
-                                fontSize = 18.sp
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
                                 text = "ADMINISTRAR SUCURSALES Y LOCALES",
@@ -114,7 +122,7 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                     ) {
                         Column {
                             Text("TENDENCIA DE VENTAS", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
-                            Text("Rendimiento Semanal", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = DarkGray)
+                            Text("Rendimiento Semanal", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = DarkGray)
                         }
                         Surface(color = SoftOrangeBg, shape = RoundedCornerShape(8.dp)) {
                             Text("ESTA SEMANA", color = PrimaryOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
@@ -129,10 +137,7 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        val days = listOf("L", "M", "M", "J", "V", "S", "D")
-                        val values = listOf(0.4f, 0.3f, 0.6f, 0.8f, 1.0f, 0.7f, 0.5f)
-
-                        days.forEachIndexed { index, day ->
+                        DEMO_DAYS.forEachIndexed { index, day ->
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 if (day == "V") {
                                     Surface(color = PrimaryOrange, shape = RoundedCornerShape(4.dp)) {
@@ -143,7 +148,7 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                                 Box(
                                     modifier = Modifier
                                         .width(30.dp)
-                                        .fillMaxHeight(values[index])
+                                        .fillMaxHeight(DEMO_VALUES[index])
                                         .background(
                                             if (day == "V") PrimaryOrange else ExtraLightGray,
                                             RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
@@ -163,10 +168,7 @@ fun InicioAdminScreen(onNavigateToManage: () -> Unit = {}) {
                 Text("MÁS VENDIDOS", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
             }
 
-            val topProducts = listOf(
-                TopProduct("Hamburguesa Clásica", "84 unidades vendidas", "$1,250", "+ 5% hoy", TrafficGreen),
-                TopProduct("Pizza Familiar", "22 unidades vendidas", "$2,100", "Sin cambios", MediumGray)
-            )
+            val topProducts = DEMO_TOP_PRODUCTS
 
             items(topProducts) { product ->
                 TopProductCard(product)
@@ -231,8 +233,8 @@ fun MetricSmallCard(modifier: Modifier, title: String, value: String, trend: Str
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(title, fontSize = 10.sp, color = MediumGray, fontWeight = FontWeight.Bold)
-            Text(value, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = DarkGray)
+            Text(title, style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = DarkGray)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = if (trend.contains("+")) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
@@ -241,7 +243,7 @@ fun MetricSmallCard(modifier: Modifier, title: String, value: String, trend: Str
                     modifier = Modifier.size(12.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(trend, fontSize = 10.sp, color = trendColor, fontWeight = FontWeight.Bold)
+                Text(trend, style = MaterialTheme.typography.labelSmall, color = trendColor, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -263,12 +265,12 @@ fun TopProductCard(product: TopProduct) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(product.name, fontWeight = FontWeight.Bold, color = DarkGray, fontSize = 16.sp)
-                Text(product.sold, fontSize = 12.sp, color = MediumGray)
+                Text(product.name, fontWeight = FontWeight.Bold, color = DarkGray, style = MaterialTheme.typography.bodyLarge)
+                Text(product.sold, style = MaterialTheme.typography.bodySmall, color = MediumGray)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(product.price, fontWeight = FontWeight.ExtraBold, color = DarkGray, fontSize = 16.sp)
-                Text(product.status, fontSize = 10.sp, color = product.statusColor, fontWeight = FontWeight.Bold)
+                Text(product.price, fontWeight = FontWeight.ExtraBold, color = DarkGray, style = MaterialTheme.typography.bodyLarge)
+                Text(product.status, style = MaterialTheme.typography.labelSmall, color = product.statusColor, fontWeight = FontWeight.Bold)
             }
         }
     }

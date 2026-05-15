@@ -157,7 +157,7 @@ fun AgregarPlatilloScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         FormTextField(
-            label = "NOMBRE DEL PLATILLO",
+            label = "Nombre del Platillo",
             value = nombre,
             onValueChange = { nombre = it },
             placeholder = "Ej. Hamburguesa Especial AlToque"
@@ -166,7 +166,7 @@ fun AgregarPlatilloScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         FormTextField(
-            label = "DESCRIPCIÓN",
+            label = "Descripción",
             value = descripcion,
             onValueChange = { descripcion = it },
             placeholder = "Describe los ingredientes, alérgenos y detalles especiales...",
@@ -177,7 +177,7 @@ fun AgregarPlatilloScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         FormTextField(
-            label = "PRECIO",
+            label = "Precio",
             value = precio,
             onValueChange = { precio = it },
             placeholder = "0.00",
@@ -196,7 +196,7 @@ fun AgregarPlatilloScreen(
 
         // 5. SELECCIONAR SUCURSAL
         Text(
-            text = "SELECCIONAR SUCURSAL",
+            text = "Seleccionar Sucursal",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = MediumGray
@@ -259,7 +259,7 @@ fun AgregarPlatilloScreen(
 
         // 6. CATEGORÍA
         Text(
-            text = "CATEGORÍA",
+            text = "Categoría",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = MediumGray

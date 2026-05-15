@@ -24,6 +24,13 @@ import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.core.PermissionType
 import com.example.fila_virtual.core.rememberPermissionsManager
 
+/** Convierte hora y minuto a formato 12h (ej. 09:00 AM) */
+private fun formatTime(hour: Int, minute: Int): String {
+    val amPm = if (hour < 12) "AM" else "PM"
+    val h = if (hour % 12 == 0) 12 else hour % 12
+    return "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
+}
+
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AñadirEstablecimientoScreen(
@@ -52,16 +59,9 @@ fun AñadirEstablecimientoScreen(
     val timePickerStateApertura = rememberTimePickerState(initialHour = 9, initialMinute = 0)
     val timePickerStateCierre = rememberTimePickerState(initialHour = 22, initialMinute = 0)
 
-    // Categorías
-    val categoriasDisponibles = listOf("Cafetería", "Restaurante")
-    var categoriasSeleccionadas by remember { mutableStateOf(listOf("Comida Rápida")) }
-
-    // Función para formatear la hora
-    fun formatTime(hour: Int, minute: Int): String {
-        val amPm = if (hour < 12) "AM" else "PM"
-        val h = if (hour % 12 == 0) 12 else hour % 12
-        return "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
-    }
+    // Categorías disponibles — en producción vendrían del ViewModel/repositorio
+    val categoriasDisponibles = listOf("Cafetería", "Restaurante", "Comida Rápida", "Bar")
+    var categoriasSeleccionadas by remember { mutableStateOf(listOf<String>()) }
 
     // Modal de éxito (Bottom Sheet)
     if (showSuccessSheet) {
@@ -189,9 +189,7 @@ fun AñadirEstablecimientoScreen(
                     leadingContent = { Icon(Icons.Default.CameraAlt, contentDescription = null, tint = PrimaryOrange) },
                     modifier = Modifier.clickable {
                         permissions.askPermission(PermissionType.CAMERA) { granted ->
-                            if (granted) {
-                                // Aquí se llamaría a la lógica para abrir la cámara
-                            }
+                            if (granted) { /* TODO: Abrir cámara */ }
                         }
                         showImageSheet = false
                     }
@@ -201,9 +199,7 @@ fun AñadirEstablecimientoScreen(
                     leadingContent = { Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = PrimaryOrange) },
                     modifier = Modifier.clickable {
                         permissions.askPermission(PermissionType.GALLERY) { granted ->
-                            if (granted) {
-                                // Aquí se llamaría a la lógica para abrir la galería
-                            }
+                            if (granted) { /* TODO: Abrir galería */ }
                         }
                         showImageSheet = false
                     }

@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.FormHeader
 import com.example.fila_virtual.components.SearchBar
@@ -210,7 +209,7 @@ fun EstablecimientoCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = if (establecimiento.activo) "ABIERTO" else "CERRADO",
-                            fontSize = 8.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = badgeTextColor
                         )

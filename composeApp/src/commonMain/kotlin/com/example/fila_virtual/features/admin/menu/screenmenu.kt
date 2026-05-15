@@ -35,6 +35,7 @@ fun ScreenMenu(
     establecimientoId: String,
     ownerUid: String,
     onNavigateToAdd: () -> Unit,
+    onNavigateToEdit: (String) -> Unit = {},
     viewModel: ProductoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
@@ -85,7 +86,7 @@ fun ScreenMenu(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
         ) {
             // Título de la sección
             Column(
@@ -219,6 +220,7 @@ fun ScreenMenu(
                         CardMenuItem(
                             producto = producto,
                             sucursalNombre = sucursalNombre,
+                            onEdit = { onNavigateToEdit(producto.id) },
                             onToggleDisponibilidad = { disponible ->
                                 viewModel.actualizarDisponibilidad(producto.id, disponible)
                             }
@@ -234,12 +236,13 @@ fun ScreenMenu(
 fun CardMenuItem(
     producto: Producto,
     sucursalNombre: String,
+    onEdit: () -> Unit = {},
     onToggleDisponibilidad: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* TODO: Navegar a editar o detalles */ },
+            .clickable { onEdit() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -305,7 +308,7 @@ fun CardMenuItem(
                     tint = PrimaryOrange,
                     modifier = Modifier
                         .size(22.dp)
-                        .clickable { /* TODO: Navegar a editar */ }
+                        .clickable { onEdit() }
                 )
                 
                 Spacer(modifier = Modifier.weight(1f))

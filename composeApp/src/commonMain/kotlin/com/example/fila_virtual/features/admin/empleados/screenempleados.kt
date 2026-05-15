@@ -18,27 +18,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.core.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.SearchBar
-
-data class EmpleadoUi(
-    val uid: String,
-    val nombre: String,
-    val rol: String,
-    val activo: Boolean
-)
+import com.example.fila_virtual.core.LocalWindowSize
+import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.data.Empleado
+import com.example.fila_virtual.features.admin.FormState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
-    val listaEjemplo = listOf(
-        EmpleadoUi(uid = "1", nombre = "Carlos Ruiz", rol = "Cocinero", activo = true),
-        EmpleadoUi(uid = "2", nombre = "Sofía Méndez", rol = "Cajera", activo = false),
-        EmpleadoUi(uid = "3", nombre = "Luis Pérez", rol = "Repartidor", activo = true),
-        EmpleadoUi(uid = "4", nombre = "Elena Torres", rol = "Cocinero", activo = true)
-    )
+fun ScreenEmpleados(
+    establecimientoId: String,
+    onNavigateToAdd: () -> Unit,
+    viewModel: EmpleadoViewModel = viewModel()
+) {
+    val windowSize = LocalWindowSize.current
+    val horizontalPadding = windowSize.adaptiveDp(24)
 
+    val uiState by viewModel.uiState.collectAsState()
+    val empleados by viewModel.empleados.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+
+    // Cargar empleados al montar la pantalla
+    LaunchedEffect(establecimientoId) {
+        viewModel.cargarEmpleados(establecimientoId)
+    }
+
+    val listaFiltrada = empleados.filter {
+        it.nombre.contains(searchQuery, ignoreCase = true) ||
+        it.rol.contains(searchQuery, ignoreCase = true)
+    }
 
     Scaffold(
         containerColor = LightBackground,
@@ -52,17 +61,16 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar Empleado")
             }
         }
-    ) { paddingValues -> // 👇 CORRECCIÓN 1: Recibir el paddingValues del Scaffold
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // 👇 CORRECCIÓN 2: Aplicarlo aquí para evitar que el contenido se encime
-                .padding(horizontal = 24.dp) // Un poco más de margen lateral para que coincida con tu diseño
+                .padding(horizontal = horizontalPadding)
         ) {
             Text(
                 text = "Gestión de Empleados",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = DarkGray,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -88,13 +96,12 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
                     fontWeight = FontWeight.Bold,
                     color = DarkGray
                 )
-
                 Surface(
-                    color = BorderGray, // Simulando el fondo grisecito del badge
+                    color = BorderGray,
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(
-                        text = "${listaEjemplo.size} TOTAL",
+                        text = "${listaFiltrada.size} TOTAL",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -105,14 +112,59 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                // Padding inferior extra para que el último elemento no se esconda detrás del FAB
-                contentPadding = PaddingValues(bottom = 88.dp)
-            ) {
-                items(listaEjemplo) { empleado ->
-                    CardEmpleado(empleado)
+            when {
+                uiState is FormState.Loading && empleados.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = PrimaryOrange)
+                    }
+                }
+
+                uiState is FormState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = (uiState as FormState.Error).message,
+                            color = TrafficRed,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                    }
+                }
+
+                listaFiltrada.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (searchQuery.isEmpty())
+                                "No hay empleados registrados aún"
+                            else
+                                "No se encontraron resultados para \"$searchQuery\"",
+                            color = MediumGray,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 88.dp)
+                    ) {
+                        items(listaFiltrada, key = { it.id }) { empleado ->
+                            CardEmpleado(empleado)
+                        }
+                    }
                 }
             }
         }
@@ -120,12 +172,12 @@ fun ScreenEmpleados(onNavigateToAdd: () -> Unit) {
 }
 
 @Composable
-fun CardEmpleado(empleado: EmpleadoUi) {
+fun CardEmpleado(empleado: Empleado) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Un toquecito sutil de sombra
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -133,6 +185,7 @@ fun CardEmpleado(empleado: EmpleadoUi) {
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Avatar con indicador de estado
             Box(modifier = Modifier.size(56.dp)) {
                 Box(
                     modifier = Modifier
@@ -141,10 +194,13 @@ fun CardEmpleado(empleado: EmpleadoUi) {
                         .background(LightGray),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = MediumGray)
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MediumGray
+                    )
                 }
-
-                // El puntito verde/gris de estado
+                // Punto de estado activo/inactivo
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -173,20 +229,25 @@ fun CardEmpleado(empleado: EmpleadoUi) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // La etiqueta de ACTIVO / INACTIVO
-                val backgroundColor = if (empleado.activo) Color(0xFFE8F5E9) else ExtraLightGray
-                val textColor = if (empleado.activo) TrafficGreen else MediumGray
-                Surface(color = backgroundColor, shape = RoundedCornerShape(8.dp)) {
+                // Badge de estado
+                val badgeBg = if (empleado.activo) Color(0xFFE8F5E9) else ExtraLightGray
+                val badgeColor = if (empleado.activo) TrafficGreen else MediumGray
+                Surface(color = badgeBg, shape = RoundedCornerShape(8.dp)) {
                     Text(
                         text = if (empleado.activo) "ACTIVO" else "INACTIVO",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = textColor,
+                        color = badgeColor,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = "Ver detalles", tint = MediumGray)
+
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = "Ver detalles",
+                tint = MediumGray
+            )
         }
     }
 }

@@ -17,7 +17,12 @@ class UserRepository {
     suspend fun getUserData(uid: String): Usuario? {
         return try {
             val document = db.collection("usuarios").document(uid).get()
-            if (document.exists) document.data<Usuario>() else null
+            if (document.exists) {
+                val user = document.data<Usuario>()
+                user.copy(uid = uid)
+            } else {
+                null
+            }
         } catch (e: Exception) {
             println("🔥 Repo Error: ${e.message}")
             null

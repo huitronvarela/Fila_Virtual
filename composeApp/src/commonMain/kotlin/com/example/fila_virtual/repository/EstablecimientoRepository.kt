@@ -45,4 +45,20 @@ class EstablecimientoRepository {
         }
         awaitClose { subscription.remove() }
     }
+
+    fun getEstablecimientosByOwner(ownerUid: String): Flow<List<Establecimiento>> = callbackFlow {
+        val subscription = establecimientosRef
+            .whereEqualTo("ownerUid", ownerUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val establecimientos = snapshot.toObjects(Establecimiento::class.java)
+                    trySend(establecimientos)
+                }
+            }
+        awaitClose { subscription.remove() }
+    }
 }

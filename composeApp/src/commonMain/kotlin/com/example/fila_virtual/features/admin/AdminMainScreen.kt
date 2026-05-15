@@ -43,6 +43,7 @@ fun AdminMainScreen(
     if (isAddingDish) {
         AgregarPlatilloScreen(
             establecimientoId = selectedEstablecimientoId,
+            ownerUid = usuario.uid,
             onBack = { isAddingDish = false }
         )
     } else if (isAddingEmployee) {
@@ -58,6 +59,7 @@ fun AdminMainScreen(
         )
     } else if (isAddingEstablecimiento) {
         AñadirEstablecimientoScreen(
+            ownerUid = usuario.uid,
             onBack = { isAddingEstablecimiento = false }
         )
     } else if (isManagingEstablecimientos) {
@@ -71,9 +73,9 @@ fun AdminMainScreen(
             onRegisterNew = {
                 isAddingEstablecimiento = true
             },
-            onAddDish = { id -> // <--- CONFIGURACIÓN DEL NUEVO BOTÓN
+            onAddDish = { id -> 
                 selectedEstablecimientoId = id
-                isAddingDish = true // Redirige a AgregarPlatilloScreen
+                isAddingDish = true 
                 isManagingEstablecimientos = false
             }
         )
@@ -102,10 +104,14 @@ fun AdminMainScreen(
                             if (selectedEstablecimientoId.isNotEmpty()) {
                                 isAddingEmployee = true
                             }
+                            else {
+                                isAddingEmployee = true
+                            }
                         }
                     )
                     2 -> ScreenMenu(
                         establecimientoId = selectedEstablecimientoId,
+                        ownerUid = usuario.uid,
                         onNavigateToAdd = {
                             if (selectedEstablecimientoId.isNotEmpty()) {
                                 isAddingDish = true

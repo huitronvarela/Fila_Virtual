@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -138,7 +139,6 @@ fun EstablecimientosScreen(
                         EstablecimientoCard(
                             establecimiento = local,
                             onClick = { onSelectEstablecimiento(local.id) },
-                            onAddDish = { onAddDish(local.id) },
                             onToggleActive = { viewModel.actualizarEstado(local.id, it) }
                         )
                     }
@@ -152,159 +152,134 @@ fun EstablecimientosScreen(
 fun EstablecimientoCard(
     establecimiento: Establecimiento,
     onClick: () -> Unit,
-    onAddDish: () -> Unit,
     onToggleActive: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+            .fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-
-            // 1. Imagen y Badge Abierto/Cerrado
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 1. Imagen y Badge (Izquierda)
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(BorderGray) // Fondo gris claro como placeholder
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(BorderGray) // Placeholder de la imagen
             ) {
-                // Icono por defecto si no hay imagen
+                // Icono por defecto
                 Icon(
                     imageVector = Icons.Default.Storefront,
                     contentDescription = null,
                     tint = MediumGray,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .size(48.dp)
+                        .size(36.dp)
                 )
 
-                // Etiqueta "ABIERTO" (basado en si está activo por ahora)
+                // Etiqueta "ABIERTO" / "CERRADO"
+                val badgeBgColor = if (establecimiento.activo) TrafficGreen.copy(alpha = 0.15f) else ExtraLightGray
+                val badgeTextColor = if (establecimiento.activo) TrafficGreen else MediumGray
+
                 Surface(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White
+                        .align(Alignment.TopStart)
+                        .padding(6.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = badgeBgColor
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(6.dp)
                                 .background(
-                                    color = if (establecimiento.activo) PrimaryOrange else MediumGray,
+                                    color = badgeTextColor,
                                     shape = CircleShape
                                 )
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = if (establecimiento.activo) "ABIERTO" else "CERRADO",
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
-                            color = DarkGray
+                            color = badgeTextColor
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-            // 2. Información Principal
-            Text(
-                text = establecimiento.nombre.ifEmpty { "Sin Nombre" },
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = DarkGray
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = MediumGray,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = establecimiento.ubicacion.direccion.ifEmpty { "Sin dirección configurada" },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MediumGray
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 4. Switch Activo/Inactivo y Botones de Acción
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            // 2. Información Principal (Centro)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
             ) {
+                Text(
+                    text = establecimiento.nombre.ifEmpty { "Sin Nombre" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGray
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(
-                        checked = establecimiento.activo,
-                        onCheckedChange = { onToggleActive(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = PrimaryOrange,
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = MediumGray,
-                            uncheckedBorderColor = Color.Transparent
-                        )
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = MediumGray,
+                        modifier = Modifier.size(14.dp)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = if (establecimiento.activo) "Activo" else "Inactivo",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (establecimiento.activo) PrimaryOrange else MediumGray,
-                        fontWeight = FontWeight.SemiBold
+                        text = establecimiento.ubicacion.direccion.ifEmpty { "Sin dirección" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MediumGray,
+                        maxLines = 1
                     )
                 }
+            }
 
-                Row {
-                    // Botón rápido para agregar platillo (estilo similar al de agregarmenu)
-                    Surface(
-                        onClick = onAddDish,
-                        shape = RoundedCornerShape(12.dp),
-                        color = PrimaryOrange.copy(alpha = 0.1f)
-                    ) {
-                        Box(modifier = Modifier.padding(12.dp)) {
-                            Icon(
-                                imageVector = Icons.Default.PlaylistAdd,
-                                contentDescription = "Añadir Platillo",
-                                tint = PrimaryOrange,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
+            Spacer(modifier = Modifier.width(8.dp))
 
-                    Spacer(modifier = Modifier.width(8.dp))
+            // 3. Acciones (Derecha) - Consistencia con Menu
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.height(80.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = "Editar",
+                    tint = PrimaryOrange,
+                    modifier = Modifier
+                        .size(22.dp)
+                )
 
-                    // Botón para Editar / Ver Detalles
-                    Surface(
-                        onClick = onClick,
-                        shape = RoundedCornerShape(12.dp),
-                        color = PrimaryOrange.copy(alpha = 0.1f)
-                    ) {
-                        Box(modifier = Modifier.padding(12.dp)) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Editar",
-                                tint = PrimaryOrange,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.weight(1f))
+
+                Switch(
+                    checked = establecimiento.activo,
+                    onCheckedChange = onToggleActive,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = PrimaryOrange,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = MediumGray,
+                        uncheckedBorderColor = Color.Transparent
+                    )
+                )
             }
         }
     }

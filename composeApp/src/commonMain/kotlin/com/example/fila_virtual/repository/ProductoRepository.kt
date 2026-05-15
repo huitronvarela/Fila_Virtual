@@ -43,6 +43,22 @@ class ProductoRepository {
         awaitClose { subscription.remove() }
     }
 
+    fun getProductosByOwner(ownerUid: String): Flow<List<Producto>> = callbackFlow {
+        val subscription = productosRef
+            .whereEqualTo("ownerUid", ownerUid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val productos = snapshot.toObjects(Producto::class.java)
+                    trySend(productos)
+                }
+            }
+        awaitClose { subscription.remove() }
+    }
+
     suspend fun actualizarDisponibilidad(productoId: String, disponible: Boolean): Result<Unit> {
         return try {
             productosRef.document(productoId).update("disponible", disponible).await()

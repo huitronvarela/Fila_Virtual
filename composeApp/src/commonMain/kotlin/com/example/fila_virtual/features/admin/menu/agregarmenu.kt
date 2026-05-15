@@ -1,12 +1,15 @@
 package com.example.fila_virtual.features.admin.menu
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,32 +27,49 @@ import com.example.fila_virtual.components.FormTextField
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.features.admin.ProductoViewModel
+import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AgregarPlatilloScreen(
     establecimientoId: String,
+    ownerUid: String,
     onBack: () -> Unit,
-    viewModel: ProductoViewModel = viewModel()
+    viewModel: ProductoViewModel = viewModel(),
+    establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
+    var selectedEstablecimientoId by remember { mutableStateOf(establecimientoId) }
+    var showSucursalSelector by remember { mutableStateOf(false) }
+
+    LaunchedEffect(ownerUid) {
+        establecimientoViewModel.setOwnerUid(ownerUid)
+    }
+
+    val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
+    val sucursalActual = if (selectedEstablecimientoId.isEmpty()) {
+        "Seleccionar Sucursal"
+    } else {
+        establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: "Seleccionar Sucursal"
+    }
+
     var nombre by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var precio by remember { mutableStateOf("") }
 
     val categorias = listOf("Entradas", "Platos Fuertes", "Bebidas", "Postres")
     var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
-    
+
     var showSuccessSheet by remember { mutableStateOf(false) }
 
     // Modal de éxito (Bottom Sheet)
     if (showSuccessSheet) {
         ModalBottomSheet(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showSuccessSheet = false
                 viewModel.resetState()
-                onBack() 
+                onBack()
             },
             containerColor = Color.White
         ) {
@@ -66,7 +86,7 @@ fun AgregarPlatilloScreen(
                     tint = PrimaryOrange,
                     modifier = Modifier.size(80.dp)
                 )
-                
+
                 Text(
                     text = "¡Platillo Guardado!",
                     style = MaterialTheme.typography.titleLarge,
@@ -74,9 +94,9 @@ fun AgregarPlatilloScreen(
                     color = DarkGray,
                     textAlign = TextAlign.Center
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 Text(
                     text = "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -84,14 +104,14 @@ fun AgregarPlatilloScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
+
                 Button(
-                    onClick = { 
+                    onClick = {
                         showSuccessSheet = false
                         viewModel.resetState()
-                        onBack() 
+                        onBack()
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
@@ -112,10 +132,11 @@ fun AgregarPlatilloScreen(
         title = "Agregar Platillo",
         onBack = onBack,
         onSave = {
-            if (nombre.isNotBlank() && precio.isNotBlank()) {
+            if (nombre.isNotBlank() && precio.isNotBlank() && selectedEstablecimientoId.isNotBlank()) {
                 val precioDouble = precio.toDoubleOrNull() ?: 0.0
                 viewModel.guardarProducto(
-                    establecimientoId = establecimientoId,
+                    establecimientoId = selectedEstablecimientoId,
+                    ownerUid = ownerUid,
                     nombre = nombre,
                     descripcion = descripcion,
                     precio = precioDouble,
@@ -128,6 +149,8 @@ fun AgregarPlatilloScreen(
         },
         saveButtonText = if (uiState is FormState.Loading) "Guardando..." else "Guardar Platillo"
     ) {
+
+        // 1. IMAGEN DEL PLATILLO
         FormImagePicker(
             label = "IMAGEN DEL PLATILLO",
             onClick = { /* Selector de imagen */ }
@@ -135,6 +158,7 @@ fun AgregarPlatilloScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // 2. NOMBRE DEL PLATILLO
         FormTextField(
             label = "NOMBRE DEL PLATILLO",
             value = nombre,
@@ -144,17 +168,19 @@ fun AgregarPlatilloScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 3. DESCRIPCIÓN
         FormTextField(
             label = "DESCRIPCIÓN",
             value = descripcion,
             onValueChange = { descripcion = it },
-            placeholder = "Describe los ingredientes, alérgenos...",
+            placeholder = "Describe los ingredientes, alérgenos y detalles especiales...",
             singleLine = false,
             minHeight = 120
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 4. PRECIO
         FormTextField(
             label = "PRECIO",
             value = precio,
@@ -173,6 +199,70 @@ fun AgregarPlatilloScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // 5. SELECCIONAR SUCURSAL
+        Text(
+            text = "SELECCIONAR SUCURSAL",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MediumGray
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Box {
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showSucursalSelector = true },
+                border = BorderStroke(1.dp, BorderGray)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Storefront,
+                        contentDescription = null,
+                        tint = DarkGray,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = sucursalActual,
+                        color = if (selectedEstablecimientoId.isEmpty()) MediumGray else DarkGray,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = DarkGray,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            DropdownMenu(
+                expanded = showSucursalSelector,
+                onDismissRequest = { showSucursalSelector = false },
+                modifier = Modifier.background(Color.White)
+            ) {
+                establecimientos.forEach { sucursal ->
+                    DropdownMenuItem(
+                        text = { Text(sucursal.nombre) },
+                        onClick = {
+                            selectedEstablecimientoId = sucursal.id
+                            showSucursalSelector = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 6. CATEGORÍA
         Text(
             text = "CATEGORÍA",
             style = MaterialTheme.typography.labelSmall,
@@ -180,7 +270,7 @@ fun AgregarPlatilloScreen(
             color = MediumGray
         )
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

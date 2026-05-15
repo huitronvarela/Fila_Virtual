@@ -27,6 +27,7 @@ import com.example.fila_virtual.core.rememberPermissionsManager
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AñadirEstablecimientoScreen(
+    ownerUid: String,
     onBack: () -> Unit,
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
@@ -221,6 +222,7 @@ fun AñadirEstablecimientoScreen(
                     descripcion = descripcion,
                     ubicacion = Ubicacion(direccion = direccion),
                     activo = false, // Se guarda como no activado por defecto
+                    ownerUid = ownerUid,
                     categorias = categoriasSeleccionadas,
                     horario = mapOf(
                         "todos" to HorarioDia(apertura = apertura, cierre = cierre)

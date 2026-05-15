@@ -7,6 +7,7 @@ import com.example.fila_virtual.repository.EstablecimientoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -16,13 +17,27 @@ class EstablecimientoViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<FormState>(FormState.Idle)
     val uiState: StateFlow<FormState> = _uiState
 
-    // Flow de establecimientos desde el repositorio
-    val establecimientos: StateFlow<List<Establecimiento>> = repository.getEstablecimientos()
+    private val _ownerUid = MutableStateFlow<String?>(null)
+
+    // Flow de establecimientos filtrados por dueño
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val establecimientos: StateFlow<List<Establecimiento>> = _ownerUid
+        .flatMapLatest { uid ->
+            if (uid != null) {
+                repository.getEstablecimientosByOwner(uid)
+            } else {
+                repository.getEstablecimientos()
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    fun setOwnerUid(uid: String) {
+        _ownerUid.value = uid
+    }
 
     fun guardarEstablecimiento(establecimiento: Establecimiento, onSuccess: () -> Unit) {
         viewModelScope.launch {

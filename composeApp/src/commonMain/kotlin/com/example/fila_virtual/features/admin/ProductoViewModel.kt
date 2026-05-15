@@ -20,11 +20,15 @@ class ProductoViewModel : ViewModel() {
     val uiState: StateFlow<FormState> = _uiState
 
     private val _establecimientoId = MutableStateFlow<String?>(null)
+    private val _ownerUid = MutableStateFlow<String?>(null)
 
     val productos: StateFlow<List<Producto>> = _establecimientoId
         .flatMapLatest { id ->
-            if (id != null) {
+            val ownerId = _ownerUid.value
+            if (id != null && id.isNotEmpty()) {
                 repository.getProductos(id)
+            } else if (ownerId != null) {
+                repository.getProductosByOwner(ownerId)
             } else {
                 MutableStateFlow(emptyList())
             }
@@ -37,6 +41,10 @@ class ProductoViewModel : ViewModel() {
 
     fun setEstablecimientoId(id: String) {
         _establecimientoId.value = id
+    }
+    
+    fun setOwnerUid(uid: String) {
+        _ownerUid.value = uid
     }
 
     fun guardarProducto(

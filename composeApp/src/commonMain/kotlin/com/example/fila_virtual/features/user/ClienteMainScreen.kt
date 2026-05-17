@@ -22,6 +22,8 @@ import com.example.fila_virtual.features.user.home.HomeView
 import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen
 import com.example.fila_virtual.features.user.carrio_compra.CartScreen
+import com.example.fila_virtual.features.user.menu.UserMenuScreen // Importamos el menú
+import com.example.fila_virtual.data.Establecimiento
 
 @Composable
 fun ClienteMainScreen(
@@ -35,6 +37,9 @@ fun ClienteMainScreen(
     var isEditingProfile by remember { mutableStateOf(false) }
     var showCart by remember { mutableStateOf(false) }
 
+    // Estado para guardar el local seleccionado
+    var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
+
     if (isEditingProfile) {
         EditProfileScreen(
             usuario = usuario,
@@ -43,6 +48,17 @@ fun ClienteMainScreen(
         )
     } else if (showCart) {
         CartScreen(onBackClick = { showCart = false })
+    }
+    // Si seleccionó un local, mostramos su menú completo
+    else if (selectedEstablecimiento != null) {
+        UserMenuScreen(
+            establecimientoId = selectedEstablecimiento!!.id,
+            nombreEstablecimiento = selectedEstablecimiento!!.nombre,
+            onBack = { selectedEstablecimiento = null },
+            onAddToCart = { producto ->
+                // Futura lógica del carrito
+            }
+        )
     } else {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val windowSize = WindowSize(maxWidth, maxHeight)
@@ -72,7 +88,14 @@ fun ClienteMainScreen(
                         userScrollEnabled = true
                     ) { page ->
                         when (page) {
-                            0 -> HomeView(usuario = usuario, onCartClick = { showCart = true })
+                            0 -> HomeView(
+                                usuario = usuario,
+                                onCartClick = { showCart = true },
+                                // Capturamos el clic del local
+                                onEstablecimientoClick = { local ->
+                                    selectedEstablecimiento = local
+                                }
+                            )
                             1 -> OrdenesScreen()
                             2 -> BilleteraScreen(viewModel)
                             3 -> ProfileComponent(

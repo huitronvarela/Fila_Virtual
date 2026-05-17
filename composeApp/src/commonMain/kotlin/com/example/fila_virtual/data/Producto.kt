@@ -13,7 +13,12 @@ data class Producto(
     val categoria: String = "",
     val imagenUrl: String = "",
     val disponible: Boolean = true,
-    val popularidad: Double = 0.0,
+    val popularidad: Double = 0.0, // Puedes dejar esta por si la usan para métricas de clics después
+
+    // 👇 NUEVOS CAMPOS PARA EL RANKING ORGÁNICO
+    val ratingPromedio: Double = 0.0,
+    val totalVotos: Int = 0,
+
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L
 )

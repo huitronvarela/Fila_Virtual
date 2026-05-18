@@ -1,5 +1,6 @@
 package com.example.fila_virtual.features.user
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -26,7 +27,7 @@ import com.example.fila_virtual.features.user.menu.UserMenuScreen // Importamos 
 import com.example.fila_virtual.data.Establecimiento
 
 @Composable
-fun MainScreen(
+fun ClienteMainScreen(
     viewModel: UserViewModel = remember { UserViewModel() },
     onLogout: () -> Unit
 ) {
@@ -38,7 +39,7 @@ fun MainScreen(
     // ESTADOS PARA NAVEGACIÓN
     var isEditingProfile by remember { mutableStateOf(false) }
     var showCart by remember { mutableStateOf(false) }
-
+    var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
     // Prioridad de navegación: Edición > Carrito > Pantalla Principal
     if (isEditingProfile) {
         EditProfileScreen(

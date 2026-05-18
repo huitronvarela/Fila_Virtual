@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,11 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import kotlinx.coroutines.launch
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
-import com.example.fila_virtual.repository.ProductoRepository // Inyectamos tu repositorio
 
 // --- MODELOS DE DATOS DE PRUEBA ---
 data class CartItem(val name: String, val description: String, val price: String, val quantity: Int)
@@ -32,31 +28,23 @@ fun CartScreen(onBackClick: () -> Unit) {
     val windowSize = LocalWindowSize.current
     val padding = windowSize.adaptiveDp(16).value.dp
 
-    // 👇 1. EL INTERRUPTOR DEL MODAL
-    var showRatingModal by remember { mutableStateOf(false) }
-
     // Datos simulados
     val cartItems = listOf(
         CartItem("Doble Smash Burger", "Sin cebolla", "$8.500", 1),
         CartItem("Pizza Margarita", "Masa madre", "$12.000", 1)
     )
 
-    // 👇 3. EL MODAL SE DIBUJA SI EL INTERRUPTOR ESTÁ ENCENDIDO
-    if (showRatingModal) {
-        RatingModal(
-            onDismiss = { showRatingModal = false },
-            onRatingSubmitted = {
-                // Aquí podrías agregar una navegación a la pantalla de éxito después de calificar
-                showRatingModal = false
-            }
-        )
-    }
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { CartTopBar(onBackClick = onBackClick) },
-        // 👇 2. EL DISPARADOR: Le pasamos la orden de encender el modal al botón de pagar
-        bottomBar = { CartBottomBar(onPayClick = { showRatingModal = true }) }
+        bottomBar = {
+            CartBottomBar(
+                onPayClick = {
+                    // TODO: Aquí irá la lógica de Firebase para subir la orden de compra
+                    println("Generando turno...")
+                }
+            )
+        }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -85,107 +73,6 @@ fun CartScreen(onBackClick: () -> Unit) {
         }
     }
 }
-
-// --- 👇 NUEVO COMPONENTE: EL MODAL DE CALIFICACIÓN ---
-@Composable
-fun RatingModal(onDismiss: () -> Unit, onRatingSubmitted: () -> Unit) {
-    var selectedRating by remember { mutableIntStateOf(0) }
-    var isSubmitting by remember { mutableStateOf(false) }
-    // 👇 NUEVO: Estado para guardar y mostrar el error real de Firebase
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-    val productoRepo = remember { ProductoRepository() }
-
-    Dialog(onDismissRequest = { if (!isSubmitting) onDismiss() }) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier.size(60.dp).background(SoftOrangeBg, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.ThumbUp, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(30.dp))
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("¡Tu orden está lista!", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = DarkGray)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("¿Qué te pareció la comida? Tu opinión ayuda a otros a elegir.", style = MaterialTheme.typography.bodyMedium, color = MediumGray, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Estrellitas
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (i in 1..5) {
-                        Icon(
-                            imageVector = if (i <= selectedRating) Icons.Default.Star else Icons.Outlined.StarOutline,
-                            contentDescription = "Estrella $i",
-                            tint = if (i <= selectedRating) TrafficYellow else BorderGray,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clickable { if (!isSubmitting) selectedRating = i }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 👇 AQUI PINTAMOS EL ERROR EN ROJO SI ALGO FALLA
-                if (errorMessage != null) {
-                    Text(
-                        text = "Error Firebase: $errorMessage",
-                        color = TrafficRed,
-                        style = MaterialTheme.typography.labelSmall,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Botón
-                Button(
-                    onClick = {
-                        if (selectedRating > 0) {
-                            isSubmitting = true
-                            errorMessage = null // Limpiamos el error previo
-                            scope.launch {
-                                val idTacos = "8nh8acT3yJi5Ys12xKxO"
-                                // 👇 ATRAPAMOS EL RESULTADO DE LA FUNCIÓN
-                                val result = productoRepo.calificarProducto(idTacos, selectedRating)
-
-                                isSubmitting = false
-                                if (result.isSuccess) {
-                                    onRatingSubmitted()
-                                } else {
-                                    // SI FALLA, LO MOSTRAMOS EN LA PANTALLA
-                                    errorMessage = result.exceptionOrNull()?.message ?: "Error desconocido"
-                                }
-                            }
-                        }
-                    },
-                    enabled = selectedRating > 0 && !isSubmitting,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (isSubmitting) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text("Enviar calificación", style = MaterialTheme.typography.titleMedium.copy(color = Color.White))
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Omitir por ahora", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = MediumGray, modifier = Modifier.clickable { if (!isSubmitting) onDismiss() })
-            }
-        }
-    }
-}
-
 
 @Composable
 fun CartTopBar(onBackClick: () -> Unit) {
@@ -497,7 +384,6 @@ fun SummaryRow(label: String, amount: String) {
     }
 }
 
-// 👇 MODIFICAMOS EL BOTÓN PARA RECIBIR LA ACCIÓN DEL CLIC
 @Composable
 fun CartBottomBar(onPayClick: () -> Unit) {
     val windowSize = LocalWindowSize.current
@@ -508,7 +394,7 @@ fun CartBottomBar(onPayClick: () -> Unit) {
     ) {
         Box(modifier = Modifier.padding(16.dp)) {
             Button(
-                onClick = { onPayClick() }, // Ejecutamos el disparo del modal
+                onClick = { onPayClick() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

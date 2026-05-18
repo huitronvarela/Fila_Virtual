@@ -3,14 +3,11 @@ package com.example.fila_virtual.features.user
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,20 +16,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.Perfil.ProfileHeader
+import com.example.fila_virtual.perfil.ProfileHeader
+import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.core.PhoneVisualTransformation
 import com.example.fila_virtual.core.isValidName
 import com.example.fila_virtual.core.isValidPhone
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Usuario
-import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.PermissionType
 import com.example.fila_virtual.core.rememberPermissionsManager
 import fila_virtual.composeapp.generated.resources.Res
@@ -47,20 +43,19 @@ fun EditProfileScreen(
     viewModel: UserViewModel,
     onBack: () -> Unit
 ) {
-    val windowSize = LocalWindowSize.current
     val focusManager = LocalFocusManager.current
     val permissions = rememberPermissionsManager()
 
     var nombre by remember { mutableStateOf(usuario?.nombre ?: "") }
     var telefono by remember { mutableStateOf(if (usuario?.telefono == "Sin registrar") "" else (usuario?.telefono ?: "")) }
     val email = usuario?.email ?: ""
-    
+
     val scope = rememberCoroutineScope()
     var isSaving by remember { mutableStateOf(false) }
     var showConfirmSheet by remember { mutableStateOf(false) }
     var showPhotoSheet by remember { mutableStateOf(false) }
 
-    // MODAL DE CONFIRMACIÓN (Desde abajo)
+    // MODAL DE CONFIRMACIÓN
     if (showConfirmSheet) {
         ModalBottomSheet(
             onDismissRequest = { showConfirmSheet = false },
@@ -91,7 +86,7 @@ fun EditProfileScreen(
         }
     }
 
-    // MODAL DE FOTO (Cámara/Galería)
+    // MODAL DE FOTO
     if (showPhotoSheet) {
         ModalBottomSheet(onDismissRequest = { showPhotoSheet = false }) {
             Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
@@ -119,23 +114,19 @@ fun EditProfileScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Editar Perfil", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = TrafficRed) }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+    BaseFormScreen(
+        title = "Editar Perfil",
+        onBack = onBack,
+        onSave = { showConfirmSheet = true },
+        saveButtonText = if (isSaving) "Guardando..." else "Guardar Cambios"
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // FOTO CON BOTÓN EDITAR
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // FOTO CON BOTÓN EDITAR
             Box(contentAlignment = Alignment.BottomEnd) {
                 ProfileHeader(usuario)
                 Surface(
@@ -146,65 +137,52 @@ fun EditProfileScreen(
                     border = BorderStroke(2.dp, Color.White)
                 ) { Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.padding(8.dp)) }
             }
+        }
 
-            Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-            // INPUTS
-            InputField(
-                label = "Nombre completo",
-                value = nombre,
-                onValueChange = { if (isValidName(it)) nombre = it },
-                placeholder = stringResource(Res.string.placeholder_name),
-                leadingIcon = Icons.Filled.Person,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                isError = nombre.isNotEmpty() && nombre.length < 3
+        // INPUTS
+        InputField(
+            label = "Nombre completo",
+            value = nombre,
+            onValueChange = { if (isValidName(it)) nombre = it },
+            placeholder = stringResource(Res.string.placeholder_name),
+            leadingIcon = Icons.Filled.Person,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+            isError = nombre.isNotEmpty() && nombre.length < 3
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        InputField(
+            label = stringResource(Res.string.label_phone),
+            value = telefono,
+            onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) telefono = it },
+            placeholder = stringResource(Res.string.placeholder_phone),
+            leadingIcon = Icons.Filled.Phone,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+            visualTransformation = PhoneVisualTransformation(),
+            isError = telefono.isNotEmpty() && !isValidPhone(telefono)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // EMAIL BLOQUEADO (Solo ver)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text("Correo electrónico", style = MaterialTheme.typography.labelMedium, color = MediumGray, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = email, onValueChange = {}, readOnly = true, enabled = false,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledBorderColor = BorderGray,
+                    disabledContainerColor = Color.White,
+                    disabledTextColor = MediumGray
+                ),
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MediumGray) }
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            InputField(
-                label = stringResource(Res.string.label_phone),
-                value = telefono,
-                onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) telefono = it },
-                placeholder = stringResource(Res.string.placeholder_phone),
-                leadingIcon = Icons.Filled.Phone,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                visualTransformation = PhoneVisualTransformation(),
-                isError = telefono.isNotEmpty() && !isValidPhone(telefono)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // EMAIL BLOQUEADO (Solo ver)
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Correo electrónico", style = MaterialTheme.typography.labelMedium, color = MediumGray, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = email, onValueChange = {}, readOnly = true, enabled = false,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledBorderColor = BorderGray,
-                        disabledContainerColor = ExtraLightGray,
-                        disabledTextColor = MediumGray
-                    ),
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MediumGray) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(40.dp))
-            
-            Button(
-                onClick = { showConfirmSheet = true },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                enabled = !isSaving
-            ) {
-                if (isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                else Text("Guardar Cambios", color = Color.White, fontWeight = FontWeight.Bold)
-            }
         }
     }
 }

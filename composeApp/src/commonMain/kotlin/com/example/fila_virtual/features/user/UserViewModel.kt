@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fila_virtual.data.TarjetaGuardada
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.repository.UserRepository
 import dev.gitlive.firebase.Firebase
@@ -166,18 +167,38 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     val userId = Firebase.auth.currentUser?.uid
                     if (userId != null) {
                         val ultimos4 = numeroTarjeta.takeLast(4)
-                        val mascara = "**** **** **** $ultimos4"
+                        val expiracionFormateada = "${fechaExpiracion.substring(0, 2)}/${fechaExpiracion.substring(2, 4)}"
                         val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
 
-                        // Actualizar metodosPago (array) y updatedAt
+                        // Construir el objeto TarjetaGuardada completo
+                        val nuevaTarjeta = TarjetaGuardada(
+                            ultimos4 = ultimos4,
+                            marca = "VISA", // Detección de marca se puede mejorar después
+                            nombreTitular = nombreTitular,
+                            expiracion = expiracionFormateada,
+                            tokenId = tokenId
+                        )
+
+                        // Guardar como mapa en Firestore (compatible con @Serializable)
                         val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
-                        if (!currentMethods.contains(mascara)) {
-                            currentMethods.add(mascara)
+                        val yaExiste = currentMethods.any { it.ultimos4 == ultimos4 }
+                        if (!yaExiste) {
+                            currentMethods.add(nuevaTarjeta)
+                        }
+
+                        val metodosComoMapa = currentMethods.map { t ->
+                            mapOf(
+                                "ultimos4" to t.ultimos4,
+                                "marca" to t.marca,
+                                "nombreTitular" to t.nombreTitular,
+                                "expiracion" to t.expiracion,
+                                "tokenId" to t.tokenId
+                            )
                         }
 
                         Firebase.firestore.collection("usuarios").document(userId)
                             .update(
-                                "metodosPago" to currentMethods,
+                                "metodosPago" to metodosComoMapa,
                                 "card_token" to tokenId,
                                 "updatedAt" to now
                             )

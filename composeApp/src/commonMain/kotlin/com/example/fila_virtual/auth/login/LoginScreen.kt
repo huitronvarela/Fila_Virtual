@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -44,7 +46,7 @@ import fila_virtual.composeapp.generated.resources.*
 import com.example.fila_virtual.core.mapFirebaseError
 import com.example.fila_virtual.core.isValidEmail
 import com.example.fila_virtual.navigation.Screens
-import com.example.fila_virtual.core.theme.* // Importamos tus colores estandarizados
+import com.example.fila_virtual.core.theme.* 
 
 // Importación de tu Repositorio
 import com.example.fila_virtual.repository.AuthRepository
@@ -84,8 +86,8 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .imePadding() // Soluciona el problema de que el teclado tape los inputs
-            .verticalScroll(rememberScrollState()) // Permite deslizar si el teclado está activo
+            .imePadding() 
+            .verticalScroll(rememberScrollState()) 
             .padding(horizontal = 24.dp, vertical = windowSize.compactDp(8).value.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -103,35 +105,19 @@ fun LoginScreen(
             modifier = Modifier.padding(top = 4.dp, bottom = windowSize.compactDp(24).value.dp)
         )
 
-        // --- INPUT DE CORREO ---
         InputField(
             label = stringResource(Res.string.label_email),
             value = email,
             onValueChange = { email = it; errorMessage = "" },
             placeholder = stringResource(Res.string.placeholder_email),
             leadingIcon = Icons.Filled.Email,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
             isError = email.isNotEmpty() && !isValidEmail(email)
         )
 
-        if (email.isNotEmpty() && !isValidEmail(email)) {
-            Text(
-                text = "Formato de correo inválido",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.align(Alignment.Start).padding(top = 4.dp, start = 16.dp)
-            )
-        }
-
         Spacer(modifier = Modifier.height(windowSize.compactDp(16).value.dp))
 
-        // --- INPUT DE CONTRASEÑA ---
         PasswordInputField(
             label = stringResource(Res.string.label_password),
             value = password,
@@ -140,13 +126,8 @@ fun LoginScreen(
             onVisibilityChange = { passwordVisible = it },
             placeholder = stringResource(Res.string.placeholder_password),
             leadingIcon = Icons.Filled.Lock,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
 
         Text(
@@ -171,7 +152,6 @@ fun LoginScreen(
             )
         }
 
-        // --- BOTÓN DE LOGIN ---
         ActionButton(text = stringResource(Res.string.btn_login), isLoading = isLoading) {
             if (email.isBlank() || password.isBlank()) {
                 errorMessage = "Por favor llena todos los campos"
@@ -204,7 +184,6 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(windowSize.compactDp(32).value.dp))
     }
 
-    // --- BOTTOM SHEET DE RECUPERACIÓN (FLUJO DE 3 PASOS) ---
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = {
@@ -215,7 +194,7 @@ fun LoginScreen(
                 newPassword = ""
             },
             sheetState = sheetState,
-            containerColor = LightSurface // Usamos el color de tu Theme
+            containerColor = MaterialTheme.colorScheme.background // Fondo Gris
         ) {
             Column(
                 modifier = Modifier
@@ -225,20 +204,15 @@ fun LoginScreen(
                     .padding(bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // --- PASO 1: PEDIR CORREO ---
+                // PASO 1: PEDIR CORREO
                 AnimatedVisibility(visible = recoveryStep == 1) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Recuperar contraseña", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            "Recuperar contraseña",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = "Te enviaremos un código de 6 dígitos para validar tu identidad.",
+                            text = "Te enviaremos un código de 6 dígitos.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MediumGray,
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.padding(vertical = 12.dp)
                         )
 
                         InputField(
@@ -246,22 +220,14 @@ fun LoginScreen(
                             value = recoveryEmail,
                             onValueChange = { recoveryEmail = it; recoveryMessage = "" },
                             placeholder = "ejemplo@correo.com",
-                            leadingIcon = Icons.Filled.Email,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                            leadingIcon = Icons.Filled.Email
                         )
 
                         if (recoveryMessage.isNotEmpty()) {
-                            Text(
-                                recoveryMessage,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 12.dp)
-                            )
+                            Text(recoveryMessage, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp))
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
-
                         ActionButton(text = "Enviar Código", isLoading = isRecovering) {
                             if (recoveryEmail.isBlank() || !isValidEmail(recoveryEmail)) {
                                 recoveryMessage = "Ingresa un correo válido"
@@ -269,13 +235,10 @@ fun LoginScreen(
                             }
                             scope.launch {
                                 isRecovering = true
-                                val enviado = authRepository.sendPasswordResetOtp(recoveryEmail.trim())
-
-                                if (enviado) {
-                                    recoveryMessage = ""
+                                if (authRepository.sendPasswordResetOtp(recoveryEmail.trim())) {
                                     recoveryStep = 2
                                 } else {
-                                    recoveryMessage = "Error al enviar el código. Revisa tu conexión."
+                                    recoveryMessage = "Error al enviar código"
                                 }
                                 isRecovering = false
                             }
@@ -283,129 +246,58 @@ fun LoginScreen(
                     }
                 }
 
-                // --- PASO 2: INGRESAR EL CÓDIGO (OTP) ---
+                // PASO 2: OTP
                 AnimatedVisibility(visible = recoveryStep == 2) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Verifica tu identidad",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = "Ingresa el código de 6 dígitos enviado a:\n$recoveryEmail",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MediumGray,
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            textAlign = TextAlign.Center
-                        )
-
+                        Text("Verifica tu identidad", style = MaterialTheme.typography.titleLarge)
+                        Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
                             value = inputOtp,
-                            onValueChange = { if (it.length <= 6) inputOtp = it; recoveryMessage = "" },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChange = { if (it.length <= 6) inputOtp = it },
                             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp, textAlign = TextAlign.Center, letterSpacing = 8.sp),
                             modifier = Modifier.fillMaxWidth(0.8f),
-                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.White, // Input Blanco
+                                focusedContainerColor = Color.White,
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = BorderGray
                             )
                         )
-
-                        if (recoveryMessage.isNotEmpty()) {
-                            Text(
-                                recoveryMessage,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 12.dp)
-                            )
-                        }
-
                         Spacer(modifier = Modifier.height(24.dp))
-
-                        ActionButton(text = "Verificar Código", isLoading = isRecovering) {
-                            if (inputOtp.length < 6) {
-                                recoveryMessage = "Ingresa los 6 dígitos"
-                                return@ActionButton
-                            }
+                        ActionButton(text = "Verificar", isLoading = isRecovering) {
                             scope.launch {
                                 isRecovering = true
-                                val esValido = authRepository.verifyOtpCode(recoveryEmail.trim(), inputOtp)
-
-                                if (esValido) {
-                                    recoveryMessage = ""
+                                if (authRepository.verifyOtpCode(recoveryEmail.trim(), inputOtp)) {
                                     recoveryStep = 3
                                 } else {
-                                    recoveryMessage = "Código incorrecto."
+                                    recoveryMessage = "Código incorrecto"
                                 }
                                 isRecovering = false
                             }
                         }
-
-                        Text(
-                            text = "¿No lo recibiste? Cancelar e intentar de nuevo",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .padding(top = 16.dp)
-                                .clickable { recoveryStep = 1; inputOtp = "" }
-                        )
                     }
                 }
 
-                // --- PASO 3: NUEVA CONTRASEÑA ---
+                // PASO 3: NUEVA CLAVE
                 AnimatedVisibility(visible = recoveryStep == 3) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Crear nueva contraseña",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = "Asegúrate de que sea segura y no la olvides.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MediumGray,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-
+                        Text("Nueva contraseña", style = MaterialTheme.typography.titleLarge)
+                        Spacer(modifier = Modifier.height(16.dp))
                         PasswordInputField(
-                            label = "Nueva Contraseña",
+                            label = "Contraseña",
                             value = newPassword,
-                            onValueChange = { newPassword = it; recoveryMessage = "" },
+                            onValueChange = { newPassword = it },
                             passwordVisible = newPasswordVisible,
                             onVisibilityChange = { newPasswordVisible = it },
-                            placeholder = "Mínimo 8 caracteres",
-                            leadingIcon = Icons.Filled.Lock,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                            placeholder = "Mínimo 8 caracteres"
                         )
-
-                        if (recoveryMessage.isNotEmpty()) {
-                            Text(
-                                text = recoveryMessage,
-                                color = if (recoveryMessage.contains("Éxito")) TrafficGreen else MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 12.dp)
-                            )
-                        }
-
                         Spacer(modifier = Modifier.height(24.dp))
-
-                        ActionButton(text = "Actualizar Contraseña", isLoading = isRecovering) {
-                            if (newPassword.length < 6) {
-                                recoveryMessage = "La contraseña debe tener al menos 6 caracteres"
-                                return@ActionButton
-                            }
-
+                        ActionButton(text = "Actualizar", isLoading = isRecovering) {
                             scope.launch {
                                 isRecovering = true
-                                delay(1500)
-                                recoveryMessage = "¡Éxito! Contraseña actualizada."
                                 delay(1000)
                                 showBottomSheet = false
-                                recoveryStep = 1
                                 isRecovering = false
                             }
                         }

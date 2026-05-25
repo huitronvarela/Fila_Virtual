@@ -1,6 +1,7 @@
 package com.example.fila_virtual.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -32,7 +33,7 @@ fun FormHeader(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = LightBackground
+        color = LightBackground // Fondo gris uniforme
     ) {
         Box(
             modifier = Modifier
@@ -71,6 +72,7 @@ fun BaseFormScreen(
     onSave: () -> Unit,
     saveButtonText: String = "Guardar",
     saveIcon: ImageVector? = null,
+    isSaveEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Scaffold(
@@ -87,10 +89,14 @@ fun BaseFormScreen(
                 Box(modifier = Modifier.padding(16.dp)) {
                     Button(
                         onClick = onSave,
+                        enabled = isSaveEnabled,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryOrange,
+                            disabledContainerColor = BorderGray
+                        ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         if (saveIcon != null) {
@@ -139,13 +145,15 @@ fun FormTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     enabled: Boolean = true,
     readOnly: Boolean = false,
+    isError: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = DarkGray
+            color = DarkGray,
+            fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -163,17 +171,19 @@ fun FormTextField(
             trailingIcon = trailingIcon,
             enabled = enabled && onClick == null,
             readOnly = readOnly || onClick != null,
+            isError = isError,
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = LightBackground,
-                focusedContainerColor = LightBackground,
-                unfocusedBorderColor = Color.Transparent,
+                unfocusedContainerColor = Color.White,
+                focusedContainerColor = Color.White,
+                errorContainerColor = Color.White, // <--- Fijo blanco en error
+                unfocusedBorderColor = BorderGray,
                 focusedBorderColor = PrimaryOrange,
+                errorBorderColor = TrafficRed,
                 focusedTextColor = DarkGray,
                 unfocusedTextColor = DarkGray,
-                disabledBorderColor = Color.Transparent,
+                disabledBorderColor = BorderGray,
                 disabledTextColor = DarkGray,
-                disabledContainerColor = LightBackground,
-                disabledPlaceholderColor = MediumGray
+                disabledContainerColor = Color.White
             )
         )
     }
@@ -188,7 +198,8 @@ fun FormImagePicker(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = DarkGray
+            color = DarkGray,
+            fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Box(
@@ -196,7 +207,8 @@ fun FormImagePicker(
                 .fillMaxWidth()
                 .height(160.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(LightBackground)
+                .background(Color.White)
+                .border(1.dp, BorderGray, RoundedCornerShape(12.dp))
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {

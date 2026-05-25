@@ -74,8 +74,11 @@ fun InputField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = BorderGray,
-                focusedContainerColor = ExtraLightGray,
-                unfocusedContainerColor = ExtraLightGray,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color.White,
+                errorContainerColor = Color.White, // <--- Esto evita la transición al gris en error
                 focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedLeadingIconColor = MediumGray,
                 errorLeadingIconColor = MaterialTheme.colorScheme.error,
@@ -131,8 +134,11 @@ fun PasswordInputField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = BorderGray,
-                focusedContainerColor = ExtraLightGray,
-                unfocusedContainerColor = ExtraLightGray,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color.White,
+                errorContainerColor = Color.White, // <--- Esto evita la transición al gris en error
                 focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedLeadingIconColor = MediumGray,
                 errorLeadingIconColor = MaterialTheme.colorScheme.error,
@@ -251,7 +257,7 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .background(LightSurface, CircleShape)
+                    .background(Color.White, CircleShape)
                     .border(1.dp, BorderGray, CircleShape)
                     .clickable { onGoogleClick() }
                     .padding(12.dp),
@@ -268,7 +274,7 @@ fun SocialLoginBlock(onGoogleClick: () -> Unit = {}, onAppleClick: () -> Unit = 
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .background(LightSurface, CircleShape)
+                    .background(Color.White, CircleShape)
                     .border(1.dp, BorderGray, CircleShape)
                     .clickable { onAppleClick() }
                     .padding(12.dp),

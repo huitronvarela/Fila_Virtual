@@ -51,7 +51,7 @@ import fila_virtual.composeapp.generated.resources.*
 
 // Importaciones de tu arquitectura y tema
 import com.example.fila_virtual.core.*
-import com.example.fila_virtual.core.theme.* // Colores y tipografía estandarizados
+import com.example.fila_virtual.core.theme.* 
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.repository.AuthRepository
@@ -61,7 +61,7 @@ import com.example.fila_virtual.repository.AuthRepository
 fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
-    val windowSize = LocalWindowSize.current // Agregado para responsividad
+    val windowSize = LocalWindowSize.current 
     val authRepository = remember { AuthRepository() }
 
     var nombre by remember { mutableStateOf("") }
@@ -99,15 +99,14 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             password == confirmPassword &&
             termsAccepted
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = LightSurface
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .navigationBarsPadding()
-                .imePadding() // Para que el teclado no tape el contenido
+                .imePadding() 
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -142,7 +141,8 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
             InputField(
                 label = stringResource(Res.string.label_name),
                 value = nombre,
-                onValueChange = { if (isValidName(it)) nombre = it },
+                // CORRECCIÓN: Permite borrar todo (it.isEmpty())
+                onValueChange = { if (isValidName(it) || it.isEmpty()) nombre = it },
                 placeholder = stringResource(Res.string.placeholder_name),
                 leadingIcon = Icons.Filled.Person,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
@@ -180,16 +180,14 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
 
             val requirements = checkPasswordRequirements(password)
 
-            // Envolvemos el campo y la barra en un Column
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .bringIntoViewRequester(passwordRequester) // Asignamos el requester aquí
+                    .bringIntoViewRequester(passwordRequester) 
                     .onFocusEvent { focusState ->
-                        // Si el usuario toca el campo, esperamos a que suba el teclado y desplazamos
                         if (focusState.isFocused) {
                             scope.launch {
-                                delay(300) // Pequeña pausa para dar tiempo al teclado a aparecer
+                                delay(300) 
                                 passwordRequester.bringIntoView()
                             }
                         }
@@ -211,7 +209,6 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                 if (password.isNotEmpty()) {
                     PasswordStrengthBar(password = password)
 
-                    // Cada vez que el usuario escribe, nos aseguramos de que toda la caja siga visible
                     LaunchedEffect(password) {
                         passwordRequester.bringIntoView()
                     }
@@ -287,7 +284,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
         }
 
         AnimatedVisibility(visible = isSuccess, enter = slideInVertically(initialOffsetY = { it }) + fadeIn()) {
-            Box(modifier = Modifier.fillMaxSize().background(LightSurface), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Image(painterResource(Res.drawable.logot), null, modifier = Modifier.size(120.dp))
                     Text(
@@ -379,7 +376,7 @@ fun LegalBottomSheet(title: String, content: String, sheetState: SheetState, onD
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = LightSurface,
+        containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
@@ -434,7 +431,7 @@ fun OtpBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onCancelClick,
         sheetState = sheetState,
-        containerColor = LightSurface
+        containerColor = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 24.dp),
@@ -457,7 +454,7 @@ fun OtpBottomSheet(
                 onValueChange = onOtpChange,
                 modifier = Modifier.fillMaxWidth().height(68.dp),
                 textStyle = TextStyle(
-                    fontSize = windowSize.adaptiveSp(28), // Texto grande para el código
+                    fontSize = windowSize.adaptiveSp(28), 
                     letterSpacing = windowSize.adaptiveSp(16),
                     textAlign = TextAlign.Center
                 ),
@@ -466,7 +463,10 @@ fun OtpBottomSheet(
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = BorderGray
+                    unfocusedBorderColor = BorderGray,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White,
+                    errorContainerColor = Color.White
                 )
             )
             if (errorMessage.isNotEmpty()) {

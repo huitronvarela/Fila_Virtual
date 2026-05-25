@@ -87,13 +87,13 @@ fun AuthContainer(
             }
         }
 
-        // Tarjeta blanca animada (Formularios)
+        // Tarjeta animada (Formularios) - Ahora usa el color de fondo gris del tema
         Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = topPadding),
             shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
-            color = Color.White
+            color = MaterialTheme.colorScheme.background
         ) {
             Crossfade(
                 targetState = isLogin,

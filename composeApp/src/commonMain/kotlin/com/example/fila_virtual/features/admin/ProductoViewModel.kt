@@ -48,6 +48,7 @@ class ProductoViewModel : ViewModel() {
     }
 
     fun guardarProducto(
+        id: String = "",
         establecimientoId: String,
         ownerUid: String,
         nombre: String,
@@ -65,6 +66,7 @@ class ProductoViewModel : ViewModel() {
             _uiState.value = FormState.Loading
 
             val nuevoProducto = Producto(
+                id = id,
                 establecimientoId = establecimientoId,
                 ownerUid = ownerUid,
                 nombre = nombre,

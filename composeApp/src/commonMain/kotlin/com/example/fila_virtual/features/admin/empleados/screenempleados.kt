@@ -2,6 +2,7 @@ package com.example.fila_virtual.features.admin.empleados
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,7 @@ import com.example.fila_virtual.features.admin.FormState
 fun ScreenEmpleados(
     establecimientoId: String,
     onNavigateToAdd: () -> Unit,
+    onEditEmpleado: (Empleado) -> Unit,
     viewModel: EmpleadoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
@@ -162,7 +164,10 @@ fun ScreenEmpleados(
                         contentPadding = PaddingValues(bottom = 88.dp)
                     ) {
                         items(listaFiltrada, key = { it.id }) { empleado ->
-                            CardEmpleado(empleado)
+                            CardEmpleado(
+                                empleado = empleado,
+                                onEdit = { onEditEmpleado(empleado) }
+                            )
                         }
                     }
                 }
@@ -172,9 +177,14 @@ fun ScreenEmpleados(
 }
 
 @Composable
-fun CardEmpleado(empleado: Empleado) {
+fun CardEmpleado(
+    empleado: Empleado,
+    onEdit: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -244,9 +254,12 @@ fun CardEmpleado(empleado: Empleado) {
             }
 
             Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = "Ver detalles",
-                tint = MediumGray
+                Icons.Default.Edit,
+                contentDescription = "Editar",
+                tint = PrimaryOrange,
+                modifier = Modifier
+                    .size(22.dp)
+                    .clickable { onEdit() }
             )
         }
     }

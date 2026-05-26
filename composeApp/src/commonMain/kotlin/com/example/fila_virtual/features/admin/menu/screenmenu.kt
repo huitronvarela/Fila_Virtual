@@ -35,7 +35,7 @@ fun ScreenMenu(
     establecimientoId: String,
     ownerUid: String,
     onNavigateToAdd: () -> Unit,
-    onNavigateToEdit: (String) -> Unit = {},
+    onNavigateToEdit: (Producto) -> Unit = {},
     viewModel: ProductoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
@@ -220,7 +220,7 @@ fun ScreenMenu(
                         CardMenuItem(
                             producto = producto,
                             sucursalNombre = sucursalNombre,
-                            onEdit = { onNavigateToEdit(producto.id) },
+                            onEdit = { onNavigateToEdit(producto) },
                             onToggleDisponibilidad = { disponible ->
                                 viewModel.actualizarDisponibilidad(producto.id, disponible)
                             }

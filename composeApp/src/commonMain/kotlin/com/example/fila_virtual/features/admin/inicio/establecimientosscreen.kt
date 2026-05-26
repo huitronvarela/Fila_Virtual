@@ -31,6 +31,7 @@ fun EstablecimientosScreen(
     onBack: () -> Unit,
     onSelectEstablecimiento: (String) -> Unit,
     onRegisterNew: () -> Unit,
+    onEditEstablecimiento: (Establecimiento) -> Unit,
     onAddDish: (String) -> Unit,
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
@@ -138,7 +139,8 @@ fun EstablecimientosScreen(
                         EstablecimientoCard(
                             establecimiento = local,
                             onClick = { onSelectEstablecimiento(local.id) },
-                            onToggleActive = { viewModel.actualizarEstado(local.id, it) }
+                            onToggleActive = { viewModel.actualizarEstado(local.id, it) },
+                            onEditClick = { onEditEstablecimiento(local) }
                         )
                     }
                 }
@@ -151,7 +153,8 @@ fun EstablecimientosScreen(
 fun EstablecimientoCard(
     establecimiento: Establecimiento,
     onClick: () -> Unit,
-    onToggleActive: (Boolean) -> Unit
+    onToggleActive: (Boolean) -> Unit,
+    onEditClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -264,6 +267,7 @@ fun EstablecimientoCard(
                     tint = PrimaryOrange,
                     modifier = Modifier
                         .size(22.dp)
+                        .clickable { onEditClick() }
                 )
 
                 Spacer(modifier = Modifier.weight(1f))

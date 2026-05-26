@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.data.Producto
+import com.example.fila_virtual.core.BackHandler
 
 private val PrimaryOrange = Color(0xFFF05A32)
 private val LightSurface = Color(0xFFFFFFFF)
@@ -34,6 +35,8 @@ fun UserMenuScreen(
 ) {
     val viewModel = remember { UserMenuViewModel() }
     val productos by viewModel.productos.collectAsState()
+
+    BackHandler(onBack = onBack)
 
     // En cuanto se abre la pantalla, le decimos al cerebro que cargue el menú de este local
     LaunchedEffect(establecimientoId) {

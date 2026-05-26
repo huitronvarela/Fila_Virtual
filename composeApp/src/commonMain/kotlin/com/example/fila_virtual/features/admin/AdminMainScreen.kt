@@ -39,17 +39,29 @@ fun AdminMainScreen(
     var isAddingEstablecimiento by remember { mutableStateOf(false) }
     
     var selectedEstablecimientoId by remember { mutableStateOf("") }
+    
+    var productoToEdit by remember { mutableStateOf<com.example.fila_virtual.data.Producto?>(null) }
+    var empleadoToEdit by remember { mutableStateOf<com.example.fila_virtual.data.Empleado?>(null) }
+    var establecimientoToEdit by remember { mutableStateOf<com.example.fila_virtual.data.Establecimiento?>(null) }
 
     if (isAddingDish) {
         AgregarPlatilloScreen(
             establecimientoId = selectedEstablecimientoId,
             ownerUid = usuario.uid,
-            onBack = { isAddingDish = false }
+            productoToEdit = productoToEdit,
+            onBack = { 
+                isAddingDish = false
+                productoToEdit = null
+            }
         )
     } else if (isAddingEmployee) {
         AnadirEmpleadoScreen(
             establecimientoId = selectedEstablecimientoId,
-            onBack = { isAddingEmployee = false }
+            empleadoToEdit = empleadoToEdit,
+            onBack = { 
+                isAddingEmployee = false
+                empleadoToEdit = null
+            }
         )
     } else if (isEditingProfile) {
         EditProfileScreen(
@@ -60,7 +72,11 @@ fun AdminMainScreen(
     } else if (isAddingEstablecimiento) {
         AñadirEstablecimientoScreen(
             ownerUid = usuario.uid,
-            onBack = { isAddingEstablecimiento = false }
+            establecimientoToEdit = establecimientoToEdit,
+            onBack = { 
+                isAddingEstablecimiento = false
+                establecimientoToEdit = null
+            }
         )
     } else if (isManagingEstablecimientos) {
         EstablecimientosScreen(
@@ -71,6 +87,10 @@ fun AdminMainScreen(
                 scope.launch { pagerState.animateScrollToPage(2) }
             },
             onRegisterNew = {
+                isAddingEstablecimiento = true
+            },
+            onEditEstablecimiento = { est ->
+                establecimientoToEdit = est
                 isAddingEstablecimiento = true
             },
             onAddDish = { id ->
@@ -102,22 +122,22 @@ fun AdminMainScreen(
                     1 -> ScreenEmpleados(
                         establecimientoId = selectedEstablecimientoId,
                         onNavigateToAdd = { 
-                            if (selectedEstablecimientoId.isNotEmpty()) {
-                                isAddingEmployee = true
-                            } else {
-                                isAddingEmployee = true
-                            }
+                            isAddingEmployee = true
+                        },
+                        onEditEmpleado = { emp ->
+                            empleadoToEdit = emp
+                            isAddingEmployee = true
                         }
                     )
                     2 -> ScreenMenu(
                         establecimientoId = selectedEstablecimientoId,
                         ownerUid = usuario.uid,
                         onNavigateToAdd = {
-                            if (selectedEstablecimientoId.isNotEmpty()) {
-                                isAddingDish = true
-                            } else {
-                                isAddingDish = true
-                            }
+                            isAddingDish = true
+                        },
+                        onNavigateToEdit = { prod ->
+                            productoToEdit = prod
+                            isAddingDish = true
                         }
                     )
                     3 -> ProfileComponent(

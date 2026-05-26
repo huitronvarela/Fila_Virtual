@@ -8,30 +8,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fila_virtual.core.theme.*
 
 @Composable
 fun QRCodeModalContent(
     turno: String,
     pedidoId: String,
+    descripcion: String,
     onDownloadClick: () -> Unit,
     onCloseClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(LightSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -51,7 +51,7 @@ fun QRCodeModalContent(
             text = "CÓDIGO DE RECOGIDA",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = MediumGray,
+            color = Color.Gray,
             letterSpacing = 1.5.sp
         )
 
@@ -61,17 +61,15 @@ fun QRCodeModalContent(
         Box(
             modifier = Modifier
                 .size(180.dp)
-                .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
+                .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp))
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Aquí en un futuro puedes poner una Image con el QR real
-            // Por ahora usamos un ícono gigante para simularlo
             Icon(
                 imageVector = Icons.Default.QrCode2,
                 contentDescription = "Código QR",
                 modifier = Modifier.fillMaxSize(),
-                tint = DarkGray
+                tint = Color.DarkGray
             )
         }
 
@@ -86,10 +84,20 @@ fun QRCodeModalContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 6. Lista de Productos (Ejemplo estático basado en tu imagen)
-        OrderItemRow(icon = Icons.Default.Fastfood, text = "1x Burger King Special")
-        Spacer(modifier = Modifier.height(8.dp))
-        OrderItemRow(icon = Icons.Default.LocalDrink, text = "1x Refresco Mediano")
+        // 6. --- LA MAGIA: LISTA DE PRODUCTOS DINÁMICA ---
+        val listaProductos = descripcion.split(",")
+
+        if (listaProductos.isEmpty() || descripcion.isBlank()) {
+            OrderItemRow(icon = Icons.Default.Fastfood, text = "Productos del pedido")
+            Spacer(modifier = Modifier.height(8.dp))
+        } else {
+            listaProductos.forEach { producto ->
+                if (producto.isNotBlank()) {
+                    OrderItemRow(icon = Icons.Default.Fastfood, text = producto.trim())
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -139,18 +147,16 @@ fun QRCodeModalContent(
     }
 }
 
-// Sub-componente para dibujar cada fila de producto de forma bonita
 @Composable
 fun OrderItemRow(icon: ImageVector, text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)) // Fondo muy clarito
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Cuadrito para el icono
         Box(
             modifier = Modifier
                 .size(36.dp)

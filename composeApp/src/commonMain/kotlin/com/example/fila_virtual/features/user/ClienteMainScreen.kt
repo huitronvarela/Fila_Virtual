@@ -25,6 +25,7 @@ import com.example.fila_virtual.features.user.billetera.BilleteraScreen
 import com.example.fila_virtual.features.user.carrio_compra.CartScreen
 import com.example.fila_virtual.features.user.menu.UserMenuScreen // Importamos el menú
 import com.example.fila_virtual.data.Establecimiento
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable
 fun ClienteMainScreen(
@@ -40,6 +41,7 @@ fun ClienteMainScreen(
     var isEditingProfile by remember { mutableStateOf(false) }
     var showCart by remember { mutableStateOf(false) }
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
+
     // Prioridad de navegación: Edición > Carrito > Pantalla Principal
     if (isEditingProfile) {
         EditProfileScreen(
@@ -48,10 +50,17 @@ fun ClienteMainScreen(
             onBack = { isEditingProfile = false }
         )
     } else if (showCart) {
-        CartScreen(onBackClick = { showCart = false })
-    }
-    // Si seleccionó un local, mostramos su menú completo
-    else if (selectedEstablecimiento != null) {
+        CartScreen(
+            viewModel = viewModel, // <-- AQUÍ PASAMOS EL VIEWMODEL
+            onBackClick = { showCart = false },
+            onOrderSuccess = {
+                showCart = false // Cerramos la pantalla del carrito
+                // Hacemos que la barra inferior viaje a la pestaña de Órdenes (índice 1)
+                scope.launch { pagerState.animateScrollToPage(1) }
+            }
+        )
+    } else if (selectedEstablecimiento != null) {
+        // ... seleccionó un local, mostramos su menú completo
         UserMenuScreen(
             establecimientoId = selectedEstablecimiento!!.id,
             nombreEstablecimiento = selectedEstablecimiento!!.nombre,

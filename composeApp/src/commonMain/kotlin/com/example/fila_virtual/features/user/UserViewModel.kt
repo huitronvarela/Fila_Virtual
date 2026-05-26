@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.TarjetaGuardada
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.repository.UserRepository
@@ -20,6 +21,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 class UserViewModel(private val repository: UserRepository = UserRepository()) : ViewModel() {
@@ -65,8 +67,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     if (data != null) {
                         usuario = data
                     } else {
-                        // Si es nulo, es posible que Firestore aún se esté sincronizando
-                        // Podríamos esperar un segundo y reintentar una vez
                         errorMessage = "Sincronizando datos..."
                     }
                 } catch (e: Exception) {
@@ -137,16 +137,13 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
 
         viewModelScope.launch {
             try {
-                // 1. Dividimos la fecha
                 val mes = fechaExpiracion.substring(0, 2)
                 val anio = "20" + fechaExpiracion.substring(2, 4)
 
-                // 2. Preparamos Ktor
                 val client = HttpClient {
                     install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 }
 
-                // 3. Generar el Token
                 val response: HttpResponse = client.post("https://api.mercadopago.com/v1/card_tokens?public_key=$MERCADO_PAGO_PUBLIC_KEY") {
                     contentType(ContentType.Application.Json)
                     setBody(buildJsonObject {
@@ -170,16 +167,14 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                         val expiracionFormateada = "${fechaExpiracion.substring(0, 2)}/${fechaExpiracion.substring(2, 4)}"
                         val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
 
-                        // Construir el objeto TarjetaGuardada completo
                         val nuevaTarjeta = TarjetaGuardada(
                             ultimos4 = ultimos4,
-                            marca = "VISA", // Detección de marca se puede mejorar después
+                            marca = "VISA",
                             nombreTitular = nombreTitular,
                             expiracion = expiracionFormateada,
                             tokenId = tokenId
                         )
 
-                        // Guardar como mapa en Firestore (compatible con @Serializable)
                         val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
                         val yaExiste = currentMethods.any { it.ultimos4 == ultimos4 }
                         if (!yaExiste) {
@@ -202,8 +197,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                                 "card_token" to tokenId,
                                 "updatedAt" to now
                             )
-
-                        loadUserData()
 
                         isLoading = false
                         errorMessage = "¡Tarjeta vinculada con éxito (Sandbox)!"
@@ -292,4 +285,64 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
             }
         }
     }
+
+    // --- FUNCIÓN DE COBRO + CREACIÓN DE PEDIDO ---
+    // --- FUNCIÓN SIMULADA PARA AVANZAR CON EL PROYECTO ---
+    fun crearPedidoYCobrar(
+        montoTotal: Double,
+        descripcion: String,
+        establecimientoId: String,
+        establecimientoNombre: String,
+        onSuccess: () -> Unit
+    ) {
+        isLoading = true
+        errorMessage = ""
+
+        viewModelScope.launch {
+            try {
+                val userId = Firebase.auth.currentUser?.uid
+                if (userId == null) {
+                    errorMessage = "Error: No hay una sesión activa."
+                    isLoading = false
+                    return@launch
+                }
+
+                // 1. SIMULAMOS EL TIEMPO DE PROCESAMIENTO DEL BANCO (1.5 segundos)
+                // (Cuando quieras usar pagos reales, aquí volverá a ir el código de Ktor y HttpClient)
+                kotlinx.coroutines.delay(1500)
+
+                // 2. EL PAGO FUE "EXITOSO" -> CREAMOS EL PEDIDO EN FIRESTORE
+                val turnoGenerado = (1..99).random()
+                val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
+
+                val pedidosRef = Firebase.firestore.collection("pedidos")
+                val nuevoPedidoRef = pedidosRef.document
+
+                val nuevoPedido = Pedido(
+                    id = nuevoPedidoRef.id,
+                    userId = userId,
+                    establecimientoId = establecimientoId,
+                    establecimientoNombre = establecimientoNombre,
+                    descripcion = descripcion, // <--- GUARDAMOS LOS PRODUCTOS REALES AQUÍ
+                    total = montoTotal,
+                    estado = "RECIBIDO",
+                    turno = turnoGenerado,
+                    createdAt = now
+                )
+
+                nuevoPedidoRef.set(nuevoPedido)
+
+                // Todo salió perfecto, limpiamos errores y cambiamos de pantalla
+                errorMessage = ""
+                isLoading = false
+                onSuccess()
+
+            } catch (e: Exception) {
+                errorMessage = "Fallo al procesar el pedido: ${e.message}"
+                isLoading = false
+            }
+        }
+    }
+
+// --- MODELO DE DATOS PARA EL PEDIDO ---
 }

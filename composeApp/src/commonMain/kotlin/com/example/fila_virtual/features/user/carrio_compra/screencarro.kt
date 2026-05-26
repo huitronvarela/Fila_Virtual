@@ -19,12 +19,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.features.user.UserViewModel
 
 // --- MODELOS DE DATOS DE PRUEBA ---
 data class CartItem(val name: String, val description: String, val price: String, val quantity: Int)
 
 @Composable
-fun CartScreen(onBackClick: () -> Unit) {
+fun CartScreen(
+    onBackClick: () -> Unit,
+    onOrderSuccess: () -> Unit,
+    viewModel: UserViewModel
+) {
     val windowSize = LocalWindowSize.current
     val padding = windowSize.adaptiveDp(16).value.dp
 
@@ -39,9 +44,22 @@ fun CartScreen(onBackClick: () -> Unit) {
         topBar = { CartTopBar(onBackClick = onBackClick) },
         bottomBar = {
             CartBottomBar(
+                isProcessing = viewModel.isLoading,
+                errorMessage = viewModel.errorMessage, // <-- AQUÍ FALTABA ESTO
                 onPayClick = {
-                    // TODO: Aquí irá la lógica de Firebase para subir la orden de compra
-                    println("Generando turno...")
+                    // Evita doble clic si ya está cargando
+                    if (viewModel.isLoading) return@CartBottomBar
+
+                    // LLAMADA REAL AL BACKEND
+                    viewModel.crearPedidoYCobrar(
+                        montoTotal = 21.30, // Monto de prueba
+                        descripcion = "Orden en AlToque",
+                        establecimientoId = "local_prueba_123",
+                        establecimientoNombre = "Pizzería Napoli",
+                        onSuccess = {
+                            onOrderSuccess()
+                        }
+                    )
                 }
             )
         }
@@ -384,37 +402,56 @@ fun SummaryRow(label: String, amount: String) {
     }
 }
 
-@Composable
-fun CartBottomBar(onPayClick: () -> Unit) {
+@Composable // <-- AQUÍ ESTABA EL DOBLE @Composable, YA LO QUITÉ
+fun CartBottomBar(isProcessing: Boolean, errorMessage: String, onPayClick: () -> Unit) {
     val windowSize = LocalWindowSize.current
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Box(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // --- AQUÍ MOSTRAMOS EL ERROR EN ROJO SI EXISTE ---
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = TrafficRed,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+
             Button(
                 onClick = { onPayClick() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                enabled = !isProcessing
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Pagar y Generar Turno",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontSize = windowSize.adaptiveSp(16)
-                        )
+                if (isProcessing) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Pagar y Generar Turno",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = windowSize.adaptiveSp(16)
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
+                    }
                 }
             }
         }

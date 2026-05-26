@@ -1,6 +1,7 @@
 package com.example.fila_virtual.features.admin.inicio
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,15 +22,6 @@ import com.example.fila_virtual.data.*
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.features.admin.FormState
-import com.example.fila_virtual.core.PermissionType
-import com.example.fila_virtual.core.rememberPermissionsManager
-
-/** Convierte hora y minuto a formato 12h (ej. 09:00 AM) */
-private fun formatTime(hour: Int, minute: Int): String {
-    val amPm = if (hour < 12) "AM" else "PM"
-    val h = if (hour % 12 == 0) 12 else hour % 12
-    return "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
-}
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +31,6 @@ fun AñadirEstablecimientoScreen(
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val permissions = rememberPermissionsManager()
 
     // Estados de los campos
     var nombre by remember { mutableStateOf("") }
@@ -53,15 +44,16 @@ fun AñadirEstablecimientoScreen(
     // Estados para diálogos y selectores
     var showAperturaPicker by remember { mutableStateOf(false) }
     var showCierrePicker by remember { mutableStateOf(false) }
-    var showImageSheet by remember { mutableStateOf(false) }
     var showSuccessSheet by remember { mutableStateOf(false) }
 
     val timePickerStateApertura = rememberTimePickerState(initialHour = 9, initialMinute = 0)
     val timePickerStateCierre = rememberTimePickerState(initialHour = 22, initialMinute = 0)
 
-    // Categorías disponibles — en producción vendrían del ViewModel/repositorio
     val categoriasDisponibles = listOf("Cafetería", "Restaurante", "Comida Rápida", "Bar")
     var categoriasSeleccionadas by remember { mutableStateOf(listOf<String>()) }
+
+    // Validación: Nombre, dirección y al menos una categoría
+    val isFormValid = nombre.isNotBlank() && direccion.isNotBlank() && categoriasSeleccionadas.isNotEmpty()
 
     // Modal de éxito (Bottom Sheet)
     if (showSuccessSheet) {
@@ -71,7 +63,7 @@ fun AñadirEstablecimientoScreen(
                 viewModel.resetState()
                 onBack() 
             },
-            containerColor = Color.White
+            containerColor = LightBackground
         ) {
             Column(
                 modifier = Modifier
@@ -80,22 +72,17 @@ fun AñadirEstablecimientoScreen(
                     .padding(bottom = 40.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .padding(bottom = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = PrimaryOrange,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = PrimaryOrange,
+                    modifier = Modifier.size(80.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "¡Establecimiento Guardado!",
+                    text = "¡Establecimiento Registrado!",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray,
@@ -105,7 +92,7 @@ fun AñadirEstablecimientoScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = "El establecimiento se ha guardado correctamente como inactivo. Puedes activarlo desde la lista principal de establecimientos.",
+                    text = "El establecimiento se ha guardado correctamente. Ahora puedes empezar a gestionar su menú y empleados.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
@@ -124,17 +111,13 @@ fun AñadirEstablecimientoScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text(
-                        "Entendido",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
+                    Text("Entendido", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
     }
 
-    // Diálogo de selección de hora (Apertura)
+    // Diálogos de selección de hora
     if (showAperturaPicker) {
         TimePickerDialog(
             onDismissRequest = { showAperturaPicker = false },
@@ -147,12 +130,9 @@ fun AñadirEstablecimientoScreen(
             dismissButton = {
                 TextButton(onClick = { showAperturaPicker = false }) { Text("Cancelar", color = MediumGray) }
             }
-        ) {
-            TimePicker(state = timePickerStateApertura)
-        }
+        ) { TimePicker(state = timePickerStateApertura) }
     }
 
-    // Diálogo de selección de hora (Cierre)
     if (showCierrePicker) {
         TimePickerDialog(
             onDismissRequest = { showCierrePicker = false },
@@ -165,275 +145,178 @@ fun AñadirEstablecimientoScreen(
             dismissButton = {
                 TextButton(onClick = { showCierrePicker = false }) { Text("Cancelar", color = MediumGray) }
             }
-        ) {
-            TimePicker(state = timePickerStateCierre)
-        }
-    }
-
-    // Modal para seleccionar origen de imagen
-    if (showImageSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showImageSheet = false },
-            containerColor = Color.White
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
-                Text(
-                    "Seleccionar imagen",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkGray
-                )
-                ListItem(
-                    headlineContent = { Text("Tomar foto") },
-                    leadingContent = { Icon(Icons.Default.CameraAlt, contentDescription = null, tint = PrimaryOrange) },
-                    modifier = Modifier.clickable {
-                        permissions.askPermission(PermissionType.CAMERA) { granted ->
-                            if (granted) { /* TODO: Abrir cámara */ }
-                        }
-                        showImageSheet = false
-                    }
-                )
-                ListItem(
-                    headlineContent = { Text("Elegir de la galería") },
-                    leadingContent = { Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = PrimaryOrange) },
-                    modifier = Modifier.clickable {
-                        permissions.askPermission(PermissionType.GALLERY) { granted ->
-                            if (granted) { /* TODO: Abrir galería */ }
-                        }
-                        showImageSheet = false
-                    }
-                )
-            }
-        }
+        ) { TimePicker(state = timePickerStateCierre) }
     }
 
     BaseFormScreen(
-        title = "Añadir Establecimiento",
+        title = "Nuevo Establecimiento",
         onBack = onBack,
+        isSaveEnabled = isFormValid,
         onSave = {
-            if (nombre.isNotBlank()) {
-                val nuevo = Establecimiento(
-                    nombre = nombre,
-                    descripcion = descripcion,
-                    ubicacion = Ubicacion(direccion = direccion),
-                    activo = false, // Se guarda como no activado por defecto
-                    ownerUid = ownerUid,
-                    categorias = categoriasSeleccionadas,
-                    horario = mapOf(
-                        "todos" to HorarioDia(apertura = apertura, cierre = cierre)
-                    ),
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
-                )
-                viewModel.guardarEstablecimiento(nuevo) {
-                    showSuccessSheet = true
-                }
-            }
+            val nuevo = Establecimiento(
+                nombre = nombre,
+                descripcion = descripcion,
+                ubicacion = Ubicacion(direccion = direccion),
+                activo = false,
+                ownerUid = ownerUid,
+                categorias = categoriasSeleccionadas,
+                horario = mapOf("todos" to HorarioDia(apertura = apertura, cierre = cierre)),
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            viewModel.guardarEstablecimiento(nuevo) { showSuccessSheet = true }
         },
-        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else "Guardar Establecimiento",
-        saveIcon = Icons.Default.Save
+        saveButtonText = if (uiState is FormState.Loading) "Registrando..." else "Registrar Establecimiento",
+        saveIcon = Icons.Default.Store
     ) {
-        // TARJETA 1: Subir Imagen
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                FormImagePicker(
-                    label = "Logotipo del Establecimiento",
-                    onClick = { showImageSheet = true }
-                )
-            }
-        }
+        // Imagen de portada
+        FormImagePicker(
+            label = "Imagen de Portada / Logotipo",
+            onClick = { /* TODO: Implementar selección de imagen */ }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Información General
+        Text(
+            text = "Información General",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = DarkGray,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        FormTextField(
+            label = "Nombre del Establecimiento",
+            value = nombre,
+            onValueChange = { nombre = it },
+            placeholder = "Ej. El Naranjo Cafetería",
+            leadingIcon = { Icon(Icons.Default.Store, null, tint = MediumGray, modifier = Modifier.size(20.dp)) }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // TARJETA 2: Información General
-        Card(
+        FormTextField(
+            label = "Dirección",
+            value = direccion,
+            onValueChange = { direccion = it },
+            placeholder = "Calle, Número y Colonia",
+            leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = MediumGray, modifier = Modifier.size(20.dp)) }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        FormTextField(
+            label = "Descripción (Opcional)",
+            value = descripcion,
+            onValueChange = { descripcion = it },
+            placeholder = "¿Qué hace especial a este lugar?",
+            singleLine = false,
+            minHeight = 100,
+            leadingIcon = { Icon(Icons.Default.Description, null, tint = MediumGray, modifier = Modifier.size(20.dp)) }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Selección de Categorías
+        Text(
+            "Categorías",
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium,
+            color = DarkGray,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "Información General",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkGray
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                FormTextField(
-                    label = "Nombre del Establecimiento",
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    placeholder = "Ej. Burger Station"
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                FormTextField(
-                    label = "Dirección",
-                    value = direccion,
-                    onValueChange = { direccion = it },
-                    placeholder = "Av. Principal #123, Col. Centro"
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                FormTextField(
-                    label = "Descripción",
-                    value = descripcion,
-                    onValueChange = { descripcion = it },
-                    placeholder = "Describe el ambiente y especialidades...",
-                    singleLine = false,
-                    minHeight = 100
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Categorías",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = DarkGray
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+            categoriasDisponibles.forEach { cat ->
+                val isSelected = cat in categoriasSeleccionadas
+                Box(
+                    modifier = Modifier
+                        .background(if (isSelected) PrimaryOrange else Color.White, RoundedCornerShape(20.dp))
+                        .border(1.dp, if (isSelected) Color.Transparent else BorderGray, RoundedCornerShape(20.dp))
+                        .clickable {
+                            categoriasSeleccionadas = if (isSelected) {
+                                categoriasSeleccionadas - cat
+                            } else {
+                                categoriasSeleccionadas + cat
+                            }
+                        }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    categoriasSeleccionadas.forEach { categoria ->
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = PrimaryOrange.copy(alpha = 0.1f),
-                            border = BorderStroke(1.dp, PrimaryOrange.copy(alpha = 0.3f))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(text = categoria, color = PrimaryOrange, fontSize = 14.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Quitar",
-                                    tint = PrimaryOrange,
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clickable {
-                                            categoriasSeleccionadas = categoriasSeleccionadas - categoria
-                                        }
-                                )
-                            }
-                        }
-                    }
-
-                    categoriasDisponibles.filter { it !in categoriasSeleccionadas }.forEach { categoria ->
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = LightBackground,
-                            modifier = Modifier.clickable {
-                                categoriasSeleccionadas = categoriasSeleccionadas + categoria
-                            }
-                        ) {
-                            Text(
-                                text = categoria,
-                                color = DarkGray,
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = LightBackground,
-                        modifier = Modifier.clickable { /* Diálogo para añadir nueva categoría */ }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = DarkGray, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = "Añadir", color = DarkGray, fontSize = 14.sp)
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // TARJETA 3: Horario Dinámico
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = "Horario",
-                        tint = PrimaryOrange,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Horario",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkGray
+                        text = cat,
+                        color = if (isSelected) Color.White else MediumGray,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
+            }
+        }
 
-                Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        FormTextField(
-                            label = "Apertura",
-                            value = apertura,
-                            onValueChange = {},
-                            onClick = { showAperturaPicker = true },
-                            trailingIcon = {
-                                Icon(Icons.Default.Schedule, contentDescription = null, tint = DarkGray, modifier = Modifier.size(20.dp))
-                            }
-                        )
-                    }
-                    Text(text = "-", fontWeight = FontWeight.Bold, color = DarkGray, modifier = Modifier.padding(top = 24.dp))
-                    Box(modifier = Modifier.weight(1f)) {
-                        FormTextField(
-                            label = "Cierre",
-                            value = cierre,
-                            onValueChange = {},
-                            onClick = { showCierrePicker = true },
-                            trailingIcon = {
-                                Icon(Icons.Default.Schedule, contentDescription = null, tint = DarkGray, modifier = Modifier.size(20.dp))
-                            }
-                        )
-                    }
-                }
+        // Horarios
+        Text(
+            text = "Horario de Atención",
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium,
+            color = DarkGray,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                FormTextField(
+                    label = "Apertura",
+                    value = apertura,
+                    onValueChange = {},
+                    readOnly = true,
+                    onClick = { showAperturaPicker = true },
+                    trailingIcon = { Icon(Icons.Default.Schedule, null, tint = MediumGray, modifier = Modifier.size(20.dp)) }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                FormTextField(
+                    label = "Cierre",
+                    value = cierre,
+                    onValueChange = {},
+                    readOnly = true,
+                    onClick = { showCierrePicker = true },
+                    trailingIcon = { Icon(Icons.Default.Schedule, null, tint = MediumGray, modifier = Modifier.size(20.dp)) }
+                )
             }
         }
 
         if (uiState is FormState.Error) {
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = (uiState as FormState.Error).message,
                 color = TrafficRed,
-                modifier = Modifier.padding(16.dp)
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold
             )
         }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "El establecimiento se registrará como inactivo por defecto.",
+            color = MediumGray,
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
+}
+
+private fun formatTime(hour: Int, minute: Int): String {
+    val amPm = if (hour < 12) "AM" else "PM"
+    val h = if (hour % 12 == 0) 12 else hour % 12
+    return "${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} $amPm"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

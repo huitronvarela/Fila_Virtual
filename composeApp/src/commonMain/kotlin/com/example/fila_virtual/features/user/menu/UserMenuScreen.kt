@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.data.Producto
-import com.example.fila_virtual.features.user.UserViewModel // <--- IMPORTANTE: Importamos tu cerebro
+import com.example.fila_virtual.core.BackHandler
 
 private val PrimaryOrange = Color(0xFFF05A32)
 private val LightSurface = Color(0xFFFFFFFF)
@@ -39,6 +39,9 @@ fun UserMenuScreen(
     var showSnackbar by remember { mutableStateOf(false) }
     var lastAddedProduct by remember { mutableStateOf("") }
 
+    BackHandler(onBack = onBack)
+
+    // En cuanto se abre la pantalla, le decimos al cerebro que cargue el menú de este local
     LaunchedEffect(establecimientoId) {
         menuViewModel.cargarMenu(establecimientoId)
     }

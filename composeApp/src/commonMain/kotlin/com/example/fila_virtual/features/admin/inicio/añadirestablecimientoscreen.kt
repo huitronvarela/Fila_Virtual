@@ -22,24 +22,30 @@ import com.example.fila_virtual.data.*
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.features.admin.FormState
+import com.example.fila_virtual.core.BackHandler
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AñadirEstablecimientoScreen(
     ownerUid: String,
     onBack: () -> Unit,
+    establecimientoToEdit: Establecimiento? = null,
     viewModel: EstablecimientoViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val haptic = LocalHapticFeedback.current
+    BackHandler(onBack = onBack)
 
     // Estados de los campos
-    var nombre by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var direccion by remember { mutableStateOf("") }
+    var nombre by remember { mutableStateOf(establecimientoToEdit?.nombre ?: "") }
+    var descripcion by remember { mutableStateOf(establecimientoToEdit?.descripcion ?: "") }
+    var direccion by remember { mutableStateOf(establecimientoToEdit?.ubicacion?.direccion ?: "") }
     
     // Horario
-    var apertura by remember { mutableStateOf("09:00 AM") }
-    var cierre by remember { mutableStateOf("10:00 PM") }
+    var apertura by remember { mutableStateOf(establecimientoToEdit?.horario?.get("todos")?.apertura ?: "09:00 AM") }
+    var cierre by remember { mutableStateOf(establecimientoToEdit?.horario?.get("todos")?.cierre ?: "10:00 PM") }
     
     // Estados para diálogos y selectores
     var showAperturaPicker by remember { mutableStateOf(false) }
@@ -50,10 +56,10 @@ fun AñadirEstablecimientoScreen(
     val timePickerStateCierre = rememberTimePickerState(initialHour = 22, initialMinute = 0)
 
     val categoriasDisponibles = listOf("Cafetería", "Restaurante", "Comida Rápida", "Bar")
-    var categoriasSeleccionadas by remember { mutableStateOf(listOf<String>()) }
+    var categoriasSeleccionadas by remember { mutableStateOf(establecimientoToEdit?.categorias ?: listOf<String>()) }
 
     // Validación: Nombre, dirección y al menos una categoría
-    val isFormValid = nombre.isNotBlank() && direccion.isNotBlank() && categoriasSeleccionadas.isNotEmpty()
+    val isFormValid = nombre.trim().isNotBlank() && direccion.trim().isNotBlank() && categoriasSeleccionadas.isNotEmpty()
 
     // Modal de éxito (Bottom Sheet)
     if (showSuccessSheet) {
@@ -82,7 +88,7 @@ fun AñadirEstablecimientoScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "¡Establecimiento Registrado!",
+                    text = if (establecimientoToEdit == null) "¡Establecimiento Registrado!" else "¡Establecimiento Actualizado!",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray,
@@ -92,7 +98,7 @@ fun AñadirEstablecimientoScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = "El establecimiento se ha guardado correctamente. Ahora puedes empezar a gestionar su menú y empleados.",
+                    text = if (establecimientoToEdit == null) "El establecimiento se ha guardado correctamente. Ahora puedes empezar a gestionar su menú y empleados." else "Los datos del establecimiento se han actualizado correctamente.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
@@ -149,24 +155,26 @@ fun AñadirEstablecimientoScreen(
     }
 
     BaseFormScreen(
-        title = "Nuevo Establecimiento",
+        title = if (establecimientoToEdit == null) "Nuevo Establecimiento" else "Editar Establecimiento",
         onBack = onBack,
         isSaveEnabled = isFormValid,
         onSave = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             val nuevo = Establecimiento(
-                nombre = nombre,
-                descripcion = descripcion,
-                ubicacion = Ubicacion(direccion = direccion),
-                activo = false,
+                id = establecimientoToEdit?.id ?: "",
+                nombre = nombre.trim(),
+                descripcion = descripcion.trim(),
+                ubicacion = Ubicacion(direccion = direccion.trim()),
+                activo = establecimientoToEdit?.activo ?: false,
                 ownerUid = ownerUid,
                 categorias = categoriasSeleccionadas,
                 horario = mapOf("todos" to HorarioDia(apertura = apertura, cierre = cierre)),
-                createdAt = System.currentTimeMillis(),
+                createdAt = establecimientoToEdit?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
             viewModel.guardarEstablecimiento(nuevo) { showSuccessSheet = true }
         },
-        saveButtonText = if (uiState is FormState.Loading) "Registrando..." else "Registrar Establecimiento",
+        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else if (establecimientoToEdit == null) "Registrar Establecimiento" else "Guardar Cambios",
         saveIcon = Icons.Default.Store
     ) {
         // Imagen de portada

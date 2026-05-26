@@ -35,6 +35,7 @@ class EmpleadoViewModel : ViewModel() {
     }
 
     fun guardarEmpleado(
+        id: String = "",
         establecimientoId: String,
         nombre: String,
         correo: String,
@@ -51,6 +52,7 @@ class EmpleadoViewModel : ViewModel() {
             _uiState.value = FormState.Loading
 
             val nuevoEmpleado = Empleado(
+                id = id,
                 establecimientoId = establecimientoId,
                 nombre = nombre,
                 correo = correo,

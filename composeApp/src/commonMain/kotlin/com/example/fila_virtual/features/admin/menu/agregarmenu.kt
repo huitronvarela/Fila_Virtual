@@ -24,23 +24,28 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.FormImagePicker
 import com.example.fila_virtual.components.FormTextField
+import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.features.admin.ProductoViewModel
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
+import com.example.fila_virtual.core.BackHandler
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AgregarPlatilloScreen(
     establecimientoId: String,
     ownerUid: String,
+    productoToEdit: Producto? = null,
     onBack: () -> Unit,
     viewModel: ProductoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    var selectedEstablecimientoId by remember { mutableStateOf(establecimientoId) }
+    var selectedEstablecimientoId by remember { mutableStateOf(productoToEdit?.establecimientoId?.takeIf { it.isNotBlank() } ?: establecimientoId) }
     var showSucursalSelector by remember { mutableStateOf(false) }
 
     LaunchedEffect(ownerUid) {
@@ -54,14 +59,19 @@ fun AgregarPlatilloScreen(
         establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: "Seleccionar Sucursal"
     }
 
-    var nombre by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var precio by remember { mutableStateOf("") }
+    var nombre by remember { mutableStateOf(productoToEdit?.nombre ?: "") }
+    var descripcion by remember { mutableStateOf(productoToEdit?.descripcion ?: "") }
+    var precio by remember { mutableStateOf(productoToEdit?.precio?.toString() ?: "") }
 
     val categorias = listOf("Entradas", "Platos Fuertes", "Bebidas", "Postres")
-    var categoriaSeleccionada by remember { mutableStateOf(categorias[0]) }
+    var categoriaSeleccionada by remember { mutableStateOf(productoToEdit?.categoria ?: "") }
     
     var showSuccessSheet by remember { mutableStateOf(false) }
+
+    val haptic = LocalHapticFeedback.current
+    BackHandler(onBack = onBack)
+
+    val isFormValid = nombre.trim().isNotBlank() && precio.trim().isNotBlank() && selectedEstablecimientoId.isNotBlank() && categoriaSeleccionada.isNotBlank()
 
     // Modal de éxito (Bottom Sheet)
     if (showSuccessSheet) {
@@ -88,7 +98,7 @@ fun AgregarPlatilloScreen(
                 )
                 
                 Text(
-                    text = "¡Platillo Guardado!",
+                    text = if (productoToEdit == null) "¡Platillo Guardado!" else "¡Platillo Actualizado!",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray,
@@ -98,7 +108,7 @@ fun AgregarPlatilloScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes.",
+                    text = if (productoToEdit == null) "El platillo se ha agregado correctamente a tu menú y está disponible para tus clientes." else "Los datos del platillo se han actualizado correctamente.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
@@ -129,16 +139,19 @@ fun AgregarPlatilloScreen(
     }
 
     BaseFormScreen(
-        title = "Agregar Platillo",
+        title = if (productoToEdit == null) "Agregar Platillo" else "Editar Platillo",
         onBack = onBack,
+        isSaveEnabled = isFormValid,
         onSave = {
-            if (nombre.isNotBlank() && precio.isNotBlank() && selectedEstablecimientoId.isNotBlank()) {
-                val precioDouble = precio.toDoubleOrNull() ?: 0.0
+            if (isFormValid) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                val precioDouble = precio.trim().toDoubleOrNull() ?: 0.0
                 viewModel.guardarProducto(
+                    id = productoToEdit?.id ?: "",
                     establecimientoId = selectedEstablecimientoId,
                     ownerUid = ownerUid,
-                    nombre = nombre,
-                    descripcion = descripcion,
+                    nombre = nombre.trim(),
+                    descripcion = descripcion.trim(),
                     precio = precioDouble,
                     categoria = categoriaSeleccionada,
                     onSuccess = {
@@ -147,7 +160,7 @@ fun AgregarPlatilloScreen(
                 )
             }
         },
-        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else "Guardar Platillo"
+        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else if (productoToEdit == null) "Guardar Platillo" else "Guardar Cambios"
     ) {
         FormImagePicker(
             label = "IMAGEN DEL PLATILLO",

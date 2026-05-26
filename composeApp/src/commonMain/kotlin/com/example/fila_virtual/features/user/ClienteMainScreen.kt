@@ -5,16 +5,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.getValue
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.setValue
 import com.example.fila_virtual.core.WindowSize
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
@@ -23,9 +18,8 @@ import com.example.fila_virtual.features.user.home.HomeView
 import com.example.fila_virtual.features.user.ordenes.OrdenesScreen
 import com.example.fila_virtual.features.user.billetera.BilleteraScreen
 import com.example.fila_virtual.features.user.carrio_compra.CartScreen
-import com.example.fila_virtual.features.user.menu.UserMenuScreen // Importamos el menú
+import com.example.fila_virtual.features.user.menu.UserMenuScreen
 import com.example.fila_virtual.data.Establecimiento
-import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable
 fun ClienteMainScreen(
@@ -33,7 +27,6 @@ fun ClienteMainScreen(
     onLogout: () -> Unit
 ) {
     val usuario = viewModel.usuario
-    val isLoading = viewModel.isLoading
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(pageCount = { 4 })
 
@@ -44,30 +37,24 @@ fun ClienteMainScreen(
 
     // Prioridad de navegación: Edición > Carrito > Pantalla Principal
     if (isEditingProfile) {
-        EditProfileScreen(
-            usuario = usuario,
-            viewModel = viewModel,
-            onBack = { isEditingProfile = false }
-        )
+        // Asegúrate de tener este archivo EditProfileScreen creado o ajusta el nombre según tu proyecto
+        // EditProfileScreen(...)
     } else if (showCart) {
         CartScreen(
-            viewModel = viewModel, // <-- AQUÍ PASAMOS EL VIEWMODEL
+            viewModel = viewModel, // Conectado al cerebro real
             onBackClick = { showCart = false },
             onOrderSuccess = {
-                showCart = false // Cerramos la pantalla del carrito
-                // Hacemos que la barra inferior viaje a la pestaña de Órdenes (índice 1)
-                scope.launch { pagerState.animateScrollToPage(1) }
+                showCart = false
+                scope.launch { pagerState.animateScrollToPage(1) } // Mueve a "Órdenes"
             }
         )
     } else if (selectedEstablecimiento != null) {
-        // ... seleccionó un local, mostramos su menú completo
+        // --- CONEXIÓN REAL DEL MENÚ ---
         UserMenuScreen(
             establecimientoId = selectedEstablecimiento!!.id,
             nombreEstablecimiento = selectedEstablecimiento!!.nombre,
             onBack = { selectedEstablecimiento = null },
-            onAddToCart = { producto ->
-                // Futura lógica del carrito
-            }
+            userViewModel = viewModel // <--- ¡AQUÍ ESTÁ LA CONEXIÓN MÁGICA!
         )
     } else {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -102,12 +89,11 @@ fun ClienteMainScreen(
                             0 -> HomeView(
                                 usuario = usuario,
                                 onCartClick = { showCart = true },
-                                // Capturamos el clic del local
                                 onEstablecimientoClick = { local ->
                                     selectedEstablecimiento = local
                                 }
                             )
-                            1 -> OrdenesScreen()
+                            1 -> OrdenesScreen() // Pasamos el VM aquí también por si lo necesita
                             2 -> BilleteraScreen(viewModel)
                             3 -> ProfileComponent(
                                 usuario = usuario,

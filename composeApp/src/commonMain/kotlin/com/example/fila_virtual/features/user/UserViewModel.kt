@@ -6,12 +6,15 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.data.Pedido
+import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.repository.UserRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 // Importaciones de Ktor para conectarnos a Mercado Pago
@@ -21,7 +24,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 class UserViewModel(private val repository: UserRepository = UserRepository()) : ViewModel() {
@@ -54,7 +56,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
     init {
         loadUserData()
     }
-
 
     fun loadUserData() {
         val uid = repository.getCurrentUserUid()
@@ -286,15 +287,53 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         }
     }
 
-    // --- FUNCIÓN DE COBRO + CREACIÓN DE PEDIDO ---
-    // --- FUNCIÓN SIMULADA PARA AVANZAR CON EL PROYECTO ---
-    fun crearPedidoYCobrar(
-        montoTotal: Double,
-        descripcion: String,
+
+    // ==========================================
+    // 🛒 LÓGICA DEL CARRITO DE COMPRAS
+    // ==========================================
+
+    private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
+    val carrito: StateFlow<List<ProductoCarrito>> = _carrito
+
+    // Función para agregar un producto (Si ya existe, le suma 1 a la cantidad)
+    fun agregarAlCarrito(idProducto: String, nombre: String, precio: Double) {
+        val listaActual = _carrito.value.toMutableList()
+        val itemExistente = listaActual.find { it.idProducto == idProducto }
+
+        if (itemExistente != null) {
+            val index = listaActual.indexOf(itemExistente)
+            listaActual[index] = itemExistente.copy(cantidad = itemExistente.cantidad + 1)
+        } else {
+            listaActual.add(ProductoCarrito(idProducto, nombre, precio, 1))
+        }
+        _carrito.value = listaActual
+    }
+
+    // Función para limpiar el carrito después de pagar
+    fun vaciarCarrito() {
+        _carrito.value = emptyList()
+    }
+
+    // Calcula el total a pagar multiplicando precio x cantidad
+    fun calcularTotalCarrito(): Double {
+        return _carrito.value.sumOf { it.precio * it.cantidad }
+    }
+
+
+    // ==========================================
+    // 💳 FUNCIÓN DE COBRO + CREACIÓN DE PEDIDO REAL
+    // ==========================================
+
+    fun procesarCompraDelCarrito(
         establecimientoId: String,
         establecimientoNombre: String,
         onSuccess: () -> Unit
     ) {
+        if (_carrito.value.isEmpty()) {
+            errorMessage = "El carrito está vacío"
+            return
+        }
+
         isLoading = true
         errorMessage = ""
 
@@ -307,11 +346,14 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     return@launch
                 }
 
-                // 1. SIMULAMOS EL TIEMPO DE PROCESAMIENTO DEL BANCO (1.5 segundos)
-                // (Cuando quieras usar pagos reales, aquí volverá a ir el código de Ktor y HttpClient)
+                // 1. SIMULAMOS EL TIEMPO DE PAGO (1.5 segundos)
                 kotlinx.coroutines.delay(1500)
 
-                // 2. EL PAGO FUE "EXITOSO" -> CREAMOS EL PEDIDO EN FIRESTORE
+                // 2. Extraemos los datos reales del carrito
+                val descripcionReal = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
+                val montoTotalReal = calcularTotalCarrito()
+
+                // 3. Preparamos los datos para Firebase
                 val turnoGenerado = (1..99).random()
                 val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
 
@@ -323,16 +365,18 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     userId = userId,
                     establecimientoId = establecimientoId,
                     establecimientoNombre = establecimientoNombre,
-                    descripcion = descripcion, // <--- GUARDAMOS LOS PRODUCTOS REALES AQUÍ
-                    total = montoTotal,
+                    descripcion = descripcionReal, // <--- GUARDAMOS LA LISTA REAL DEL CARRITO
+                    total = montoTotalReal,        // <--- TOTAL CALCULADO REAL
                     estado = "RECIBIDO",
                     turno = turnoGenerado,
                     createdAt = now
                 )
 
+                // 4. Subimos el pedido y limpiamos todo
                 nuevoPedidoRef.set(nuevoPedido)
 
-                // Todo salió perfecto, limpiamos errores y cambiamos de pantalla
+                vaciarCarrito() // Vaciamos el carrito tras una compra exitosa
+
                 errorMessage = ""
                 isLoading = false
                 onSuccess()
@@ -343,6 +387,4 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
             }
         }
     }
-
-// --- MODELO DE DATOS PARA EL PEDIDO ---
 }

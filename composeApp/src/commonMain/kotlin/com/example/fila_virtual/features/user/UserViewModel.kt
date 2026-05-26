@@ -5,12 +5,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fila_virtual.data.Pedido
+import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.repository.UserRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 // Importaciones de Ktor para conectarnos a Mercado Pago
@@ -53,7 +57,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         loadUserData()
     }
 
-
     fun loadUserData() {
         val uid = repository.getCurrentUserUid()
         if (uid != null) {
@@ -65,8 +68,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     if (data != null) {
                         usuario = data
                     } else {
-                        // Si es nulo, es posible que Firestore aún se esté sincronizando
-                        // Podríamos esperar un segundo y reintentar una vez
                         errorMessage = "Sincronizando datos..."
                     }
                 } catch (e: Exception) {
@@ -137,16 +138,13 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
 
         viewModelScope.launch {
             try {
-                // 1. Dividimos la fecha
                 val mes = fechaExpiracion.substring(0, 2)
                 val anio = "20" + fechaExpiracion.substring(2, 4)
 
-                // 2. Preparamos Ktor
                 val client = HttpClient {
                     install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 }
 
-                // 3. Generar el Token
                 val response: HttpResponse = client.post("https://api.mercadopago.com/v1/card_tokens?public_key=$MERCADO_PAGO_PUBLIC_KEY") {
                     contentType(ContentType.Application.Json)
                     setBody(buildJsonObject {
@@ -170,16 +168,14 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                         val expiracionFormateada = "${fechaExpiracion.substring(0, 2)}/${fechaExpiracion.substring(2, 4)}"
                         val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
 
-                        // Construir el objeto TarjetaGuardada completo
                         val nuevaTarjeta = TarjetaGuardada(
                             ultimos4 = ultimos4,
-                            marca = "VISA", // Detección de marca se puede mejorar después
+                            marca = "VISA",
                             nombreTitular = nombreTitular,
                             expiracion = expiracionFormateada,
                             tokenId = tokenId
                         )
 
-                        // Guardar como mapa en Firestore (compatible con @Serializable)
                         val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
                         val yaExiste = currentMethods.any { it.ultimos4 == ultimos4 }
                         if (!yaExiste) {
@@ -202,8 +198,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                                 "card_token" to tokenId,
                                 "updatedAt" to now
                             )
-
-                        loadUserData()
 
                         isLoading = false
                         errorMessage = "¡Tarjeta vinculada con éxito (Sandbox)!"
@@ -288,6 +282,107 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
             } catch (e: Exception) {
                 errorMessage = "Fallo de conexión al cobrar: ${e.message}"
             } finally {
+                isLoading = false
+            }
+        }
+    }
+
+
+    // ==========================================
+    // 🛒 LÓGICA DEL CARRITO DE COMPRAS
+    // ==========================================
+
+    private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
+    val carrito: StateFlow<List<ProductoCarrito>> = _carrito
+
+    // Función para agregar un producto (Si ya existe, le suma 1 a la cantidad)
+    fun agregarAlCarrito(idProducto: String, nombre: String, precio: Double) {
+        val listaActual = _carrito.value.toMutableList()
+        val itemExistente = listaActual.find { it.idProducto == idProducto }
+
+        if (itemExistente != null) {
+            val index = listaActual.indexOf(itemExistente)
+            listaActual[index] = itemExistente.copy(cantidad = itemExistente.cantidad + 1)
+        } else {
+            listaActual.add(ProductoCarrito(idProducto, nombre, precio, 1))
+        }
+        _carrito.value = listaActual
+    }
+
+    // Función para limpiar el carrito después de pagar
+    fun vaciarCarrito() {
+        _carrito.value = emptyList()
+    }
+
+    // Calcula el total a pagar multiplicando precio x cantidad
+    fun calcularTotalCarrito(): Double {
+        return _carrito.value.sumOf { it.precio * it.cantidad }
+    }
+
+
+    // ==========================================
+    // 💳 FUNCIÓN DE COBRO + CREACIÓN DE PEDIDO REAL
+    // ==========================================
+
+    fun procesarCompraDelCarrito(
+        establecimientoId: String,
+        establecimientoNombre: String,
+        onSuccess: () -> Unit
+    ) {
+        if (_carrito.value.isEmpty()) {
+            errorMessage = "El carrito está vacío"
+            return
+        }
+
+        isLoading = true
+        errorMessage = ""
+
+        viewModelScope.launch {
+            try {
+                val userId = Firebase.auth.currentUser?.uid
+                if (userId == null) {
+                    errorMessage = "Error: No hay una sesión activa."
+                    isLoading = false
+                    return@launch
+                }
+
+                // 1. SIMULAMOS EL TIEMPO DE PAGO (1.5 segundos)
+                kotlinx.coroutines.delay(1500)
+
+                // 2. Extraemos los datos reales del carrito
+                val descripcionReal = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
+                val montoTotalReal = calcularTotalCarrito()
+
+                // 3. Preparamos los datos para Firebase
+                val turnoGenerado = (1..99).random()
+                val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
+
+                val pedidosRef = Firebase.firestore.collection("pedidos")
+                val nuevoPedidoRef = pedidosRef.document
+
+                val nuevoPedido = Pedido(
+                    id = nuevoPedidoRef.id,
+                    userId = userId,
+                    establecimientoId = establecimientoId,
+                    establecimientoNombre = establecimientoNombre,
+                    descripcion = descripcionReal, // <--- GUARDAMOS LA LISTA REAL DEL CARRITO
+                    total = montoTotalReal,        // <--- TOTAL CALCULADO REAL
+                    estado = "RECIBIDO",
+                    turno = turnoGenerado,
+                    createdAt = now
+                )
+
+                // 4. Subimos el pedido y limpiamos todo
+                nuevoPedidoRef.set(nuevoPedido)
+
+                vaciarCarrito() // Vaciamos el carrito tras una compra exitosa
+
+                errorMessage = ""
+                isLoading = false
+                onSuccess()
+
+            } catch (e: Exception) {
+                errorMessage = "Fallo al procesar el pedido: ${e.message}"
                 isLoading = false
             }
         }

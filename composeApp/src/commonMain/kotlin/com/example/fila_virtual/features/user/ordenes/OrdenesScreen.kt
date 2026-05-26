@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,27 +28,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.example.fila_virtual.core.theme.*
+
 import com.example.fila_virtual.repository.ProductoRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fila_virtual.data.Pedido
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrdenesScreen() {
+fun OrdenesScreen(viewModel: OrdenesViewModel = viewModel()) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Activas", "Historial")
 
+    // Colectamos los datos de Firebase desde el ViewModel
+    val pedidosActivos by viewModel.pedidosActivos.collectAsState()
+    val pedidosHistorial by viewModel.pedidosHistorial.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
     // Estados para el QR (Activas)
     var showQRModal by remember { mutableStateOf(false) }
+    var selectedPedidoForQR by remember { mutableStateOf<Pedido?>(null) } // <-- Guardamos el pedido seleccionado
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Estado para el modal de Calificación (Historial)
     var showRatingModal by remember { mutableStateOf(false) }
+    var isTacosRated by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(LightBackground)
     ) {
-        // --- TÍTULO UNIFICADO ---
         Text(
             text = "Mis Órdenes",
             style = MaterialTheme.typography.titleLarge,
@@ -58,7 +68,6 @@ fun OrdenesScreen() {
                 .padding(top = 24.dp, bottom = 16.dp)
         )
 
-        // PESTAÑAS (TABS)
         TabRow(
             selectedTabIndex = selectedTabIndex,
             containerColor = Color.Transparent,
@@ -87,8 +96,11 @@ fun OrdenesScreen() {
             }
         }
 
-        // CONTENIDO
-        if (selectedTabIndex == 0) {
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (selectedTabIndex == 0) {
             // --- PESTAÑA: ACTIVAS ---
             LazyColumn(
                 modifier = Modifier
@@ -96,82 +108,58 @@ fun OrdenesScreen() {
                     .padding(horizontal = 20.dp),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
             ) {
-                item {
-                    Text(
-                        text = "PEDIDO EN CURSO",
-                        color = MediumGray,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                }
-                item {
-                    OrderCard(
-                        restaurantName = "Pizzeria Napoli",
-                        description = "1x Pizza Margherita",
-                        price = "$12.50",
-                        status = "EN CAMINO",
-                        isHighlight = true,
-                        onClick = { showQRModal = true }
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                item {
-                    Text(
-                        text = "PRÓXIMAS ENTREGAS",
-                        color = MediumGray,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                }
-                item {
-                    OrderCard(
-                        restaurantName = "The Burger Club",
-                        description = "2x Bacon Burger, 1x Papas",
-                        price = "$24.90",
-                        status = "PREPARANDO",
-                        isHighlight = false,
-                        onClick = { showQRModal = true }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                if (pedidosActivos.isEmpty()) {
+                    item {
+                        Text("No tienes órdenes activas.", color = MediumGray, modifier = Modifier.padding(16.dp))
+                    }
+                } else {
+                    items(pedidosActivos) { pedido ->
+                        OrderCard(
+                            restaurantName = pedido.establecimientoNombre,
+                            description = "Orden #${pedido.id.takeLast(4)}",
+                            price = "$${pedido.total}",
+                            status = pedido.estado,
+                            isHighlight = true, // Destacamos todas las activas por ahora
+                            onClick = {
+                                selectedPedidoForQR = pedido
+                                showQRModal = true
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
         } else {
-            // --- PESTAÑA: HISTORIAL (CON EL BOTÓN DE CALIFICAR) ---
+            // --- PESTAÑA: HISTORIAL ---
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
             ) {
-                item {
-                    Text(
-                        text = "ENTREGADOS RECIENTEMENTE",
-                        color = MediumGray,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                }
-                item {
-                    // Tarjeta especial para el historial que dispara las estrellitas
-                    OrderHistoryCard(
-                        restaurantName = "en buen pollos",
-                        description = "1x tacos",
-                        price = "$12.00",
-                        status = "ENTREGADO",
-                        onRateClick = { showRatingModal = true }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                if (pedidosHistorial.isEmpty()) {
+                    item {
+                        Text("No hay historial de órdenes.", color = MediumGray, modifier = Modifier.padding(16.dp))
+                    }
+                } else {
+                    items(pedidosHistorial) { pedido ->
+                        OrderHistoryCard(
+                            restaurantName = pedido.establecimientoNombre,
+                            description = "Orden #${pedido.id.takeLast(4)}",
+                            price = "$${pedido.total}",
+                            status = pedido.estado,
+                            yaCalificado = isTacosRated,
+                            onRateClick = { showRatingModal = true }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
         }
     }
 
-    // MODAL DEL QR (Para órdenes activas)
-    if (showQRModal) {
+    // MODAL DEL QR (Arreglado para evitar crasheos)
+    if (showQRModal && selectedPedidoForQR != null) {
         ModalBottomSheet(
             onDismissRequest = { showQRModal = false },
             sheetState = sheetState,
@@ -184,22 +172,30 @@ fun OrdenesScreen() {
                     .padding(bottom = 32.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Aquí asumo que tienes tu QRCodeModalContent en otro archivo
-                // QRCodeModalContent(turno = "42", pedidoId = "4829", onDownloadClick = { }, onCloseClick = { showQRModal = false })
+                // Llamamos a QRCodeModalContent que ya tienes en tu archivo QRCode.kt
+                QRCodeModalContent(
+                    turno = selectedPedidoForQR!!.turno.toString(),
+                    pedidoId = selectedPedidoForQR!!.id.takeLast(5),
+                    descripcion = selectedPedidoForQR!!.descripcion, // <--- PASAMOS LOS PRODUCTOS
+                    onDownloadClick = { /* Futura función */ },
+                    onCloseClick = { showQRModal = false }
+                )
             }
         }
     }
 
-    // MODAL DE CALIFICACIÓN TIPO BOTTOM SHEET (Para el historial)
+    // MODAL DE CALIFICACIÓN (Para el historial)
     if (showRatingModal) {
         RatingModal(
             onDismiss = { showRatingModal = false },
-            onRatingSubmitted = { showRatingModal = false }
+            onRatingSubmitted = {
+                showRatingModal = false
+                isTacosRated = true
+            }
         )
     }
 }
 
-// --- TARJETA PARA ÓRDENES ACTIVAS ---
 @Composable
 fun OrderCard(
     restaurantName: String,
@@ -282,13 +278,13 @@ fun OrderCard(
     }
 }
 
-// --- TARJETA PARA EL HISTORIAL ---
 @Composable
 fun OrderHistoryCard(
     restaurantName: String,
     description: String,
     price: String,
     status: String,
+    yaCalificado: Boolean = false,
     onRateClick: () -> Unit
 ) {
     Card(
@@ -352,32 +348,38 @@ fun OrderHistoryCard(
             HorizontalDivider(color = LightGray.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Botón de calificar
             OutlinedButton(
                 onClick = onRateClick,
+                enabled = !yaCalificado,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, PrimaryOrange),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryOrange)
+                border = BorderStroke(1.dp, if (yaCalificado) LightGray else PrimaryOrange),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = PrimaryOrange,
+                    disabledContentColor = MediumGray
+                )
             ) {
                 Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Calificar platillo", fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (yaCalificado) "Platillo calificado" else "Calificar platillo",
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 }
 
-// --- MODAL DE CALIFICACIÓN (BOTTOM SHEET) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RatingModal(onDismiss: () -> Unit, onRatingSubmitted: () -> Unit) {
     var selectedRating by remember { mutableIntStateOf(0) }
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showSuccessMessage by remember { mutableStateOf(false) }
+
     val scope = rememberCoroutineScope()
     val productoRepo = remember { ProductoRepository() }
-
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -386,89 +388,127 @@ fun RatingModal(onDismiss: () -> Unit, onRatingSubmitted: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier.size(60.dp).background(SoftOrangeBg, CircleShape),
-                contentAlignment = Alignment.Center
+        if (showSuccessMessage) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(Icons.Default.ThumbUp, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(30.dp))
-            }
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(Color(0xFFE8F5E9), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.ThumbUp, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(30.dp))
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("¿Qué te pareció?", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = DarkGray)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Tu opinión ayuda a otros estudiantes a elegir mejor.", style = MaterialTheme.typography.bodyMedium, color = MediumGray, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("¡Gracias por tu calificación!", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = DarkGray)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Tu opinión nos ayuda a mantener el mejor servicio en AlToque.", style = MaterialTheme.typography.bodyMedium, color = MediumGray, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(32.dp))
 
-            // Estrellitas
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (i in 1..5) {
-                    Icon(
-                        imageVector = if (i <= selectedRating) Icons.Default.Star else Icons.Outlined.StarOutline,
-                        contentDescription = "Estrella $i",
-                        tint = if (i <= selectedRating) TrafficYellow else BorderGray,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clickable { if (!isSubmitting) selectedRating = i }
-                    )
+                Button(
+                    onClick = {
+                        showSuccessMessage = false
+                        onRatingSubmitted()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Aceptar", style = MaterialTheme.typography.titleMedium.copy(color = Color.White))
                 }
             }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier.size(60.dp).background(SoftOrangeBg, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.ThumbUp, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.size(30.dp))
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (errorMessage != null) {
-                Text(
-                    text = "Error Firebase: $errorMessage",
-                    color = TrafficRed,
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Center
-                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("¿Qué te pareció?", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = DarkGray)
                 Spacer(modifier = Modifier.height(8.dp))
-            }
+                Text("Tu opinión ayuda a otros estudiantes a elegir mejor.", style = MaterialTheme.typography.bodyMedium, color = MediumGray, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = {
-                    if (selectedRating > 0) {
-                        isSubmitting = true
-                        errorMessage = null
-                        scope.launch {
-                            val idTacos = "8nh8acT3yJi5Ys12xKxO"
-                            val result = productoRepo.calificarProducto(idTacos, selectedRating)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (i in 1..5) {
+                        Icon(
+                            imageVector = if (i <= selectedRating) Icons.Default.Star else Icons.Outlined.StarOutline,
+                            contentDescription = "Estrella $i",
+                            tint = if (i <= selectedRating) TrafficYellow else BorderGray,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { if (!isSubmitting) selectedRating = i }
+                        )
+                    }
+                }
 
-                            isSubmitting = false
-                            if (result.isSuccess) {
-                                onRatingSubmitted()
-                            } else {
-                                errorMessage = result.exceptionOrNull()?.message ?: "Error desconocido"
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (errorMessage != null) {
+                    Text(
+                        text = "Error Firebase: $errorMessage",
+                        color = TrafficRed,
+                        style = MaterialTheme.typography.labelSmall,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Button(
+                    onClick = {
+                        if (selectedRating > 0) {
+                            isSubmitting = true
+                            errorMessage = null
+                            scope.launch {
+                                val idTacos = "8nh8acT3yJi5Ys12xKxO"
+                                val result = productoRepo.calificarProducto(idTacos, selectedRating)
+
+                                isSubmitting = false
+                                if (result.isSuccess) {
+                                    showSuccessMessage = true
+                                } else {
+                                    errorMessage = result.exceptionOrNull()?.message ?: "Error desconocido"
+                                }
                             }
                         }
+                    },
+                    enabled = selectedRating > 0 && !isSubmitting,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isSubmitting) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Enviar calificación", style = MaterialTheme.typography.titleMedium.copy(color = Color.White))
                     }
-                },
-                enabled = selectedRating > 0 && !isSubmitting,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                } else {
-                    Text("Enviar calificación", style = MaterialTheme.typography.titleMedium.copy(color = Color.White))
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Cancelar",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = MediumGray,
-                modifier = Modifier.clickable { if (!isSubmitting) onDismiss() }
-            )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Cancelar",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MediumGray,
+                    modifier = Modifier.clickable { if (!isSubmitting) onDismiss() }
+                )
+            }
         }
     }
 }

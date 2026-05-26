@@ -11,9 +11,9 @@ class EmpleadoRepository {
     suspend fun registrarEmpleado(empleado: Empleado): Result<Unit> {
         return try {
             val empleadosRef = firestore.collection("empleados")
-            val nuevoDoc = empleadosRef.document
-            val empleadoConId = empleado.copy(id = nuevoDoc.id)
-            nuevoDoc.set(empleadoConId)
+            val docRef = if (empleado.id.isEmpty()) empleadosRef.document else empleadosRef.document(empleado.id)
+            val empleadoConId = empleado.copy(id = docRef.id)
+            docRef.set(empleadoConId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

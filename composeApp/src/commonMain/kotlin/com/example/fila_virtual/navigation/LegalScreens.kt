@@ -9,10 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.fila_virtual.core.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LegalScreen(title: String, content: String, onBack: () -> Unit) {
+    BackHandler(onBack = onBack)
     Scaffold(
         topBar = {
             TopAppBar(

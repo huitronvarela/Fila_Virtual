@@ -55,11 +55,13 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.navigation.Screens
 import com.example.fila_virtual.repository.AuthRepository
+import com.example.fila_virtual.core.BackHandler
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     val scope = rememberCoroutineScope()
+    BackHandler(onBack = { onNavigate(Screens.Login) })
     val focusManager = LocalFocusManager.current
     val windowSize = LocalWindowSize.current 
     val authRepository = remember { AuthRepository() }

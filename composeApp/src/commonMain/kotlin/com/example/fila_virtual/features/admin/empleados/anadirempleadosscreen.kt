@@ -25,31 +25,39 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
+import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.core.*
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.FormState
+import com.example.fila_virtual.core.BackHandler
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AnadirEmpleadoScreen(
     establecimientoId: String = "",
+    empleadoToEdit: Empleado? = null,
     onBack: () -> Unit
 ) {
     val viewModel = remember { EmpleadoViewModel() }
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
 
-    var nombre by remember { mutableStateOf("") }
-    var correo by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var rolSeleccionado by remember { mutableStateOf("Chef") }
+    var nombre by remember { mutableStateOf(empleadoToEdit?.nombre ?: "") }
+    var correo by remember { mutableStateOf(empleadoToEdit?.correo ?: "") }
+    var telefono by remember { mutableStateOf(empleadoToEdit?.telefono ?: "") }
+    var rolSeleccionado by remember { mutableStateOf(empleadoToEdit?.rol ?: "") }
     var showSuccessSheet by remember { mutableStateOf(false) }
 
     // Validaciones idénticas a las del Register
-    val isFormValid = isValidName(nombre) && nombre.length >= 3 &&
-            isValidPhone(telefono) &&
-            isValidEmail(correo) &&
+    val isFormValid = isValidName(nombre.trim()) && nombre.trim().length >= 3 &&
+            isValidPhone(telefono.trim()) &&
+            isValidEmail(correo.trim()) &&
             rolSeleccionado.isNotEmpty()
+
+    val haptic = LocalHapticFeedback.current
+    BackHandler(onBack = onBack)
 
     // Modal de Éxito
     if (showSuccessSheet) {
@@ -76,7 +84,7 @@ fun AnadirEmpleadoScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "¡Empleado Registrado!",
+                    text = if (empleadoToEdit == null) "¡Empleado Registrado!" else "¡Empleado Actualizado!",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkGray,
@@ -84,7 +92,7 @@ fun AnadirEmpleadoScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Se ha enviado una invitación a $correo para que pueda unirse a la plataforma.",
+                    text = if (empleadoToEdit == null) "Se ha enviado una invitación a $correo para que pueda unirse a la plataforma." else "Los datos del empleado se han actualizado correctamente.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MediumGray,
                     textAlign = TextAlign.Center,
@@ -115,21 +123,24 @@ fun AnadirEmpleadoScreen(
     }
 
     BaseFormScreen(
-        title = "Nuevo Empleado",
+        title = if (empleadoToEdit == null) "Nuevo Empleado" else "Editar Empleado",
         onBack = onBack,
+        isSaveEnabled = isFormValid,
         onSave = {
             if (isFormValid) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 viewModel.guardarEmpleado(
+                    id = empleadoToEdit?.id ?: "",
                     establecimientoId = establecimientoId,
-                    nombre = nombre,
-                    correo = correo,
-                    telefono = telefono,
+                    nombre = nombre.trim(),
+                    correo = correo.trim(),
+                    telefono = telefono.trim(),
                     rol = rolSeleccionado,
                     onSuccess = { showSuccessSheet = true }
                 )
             }
         },
-        saveButtonText = if (uiState is FormState.Loading) "Registrando..." else "Registrar Empleado",
+        saveButtonText = if (uiState is FormState.Loading) "Guardando..." else if (empleadoToEdit == null) "Registrar Empleado" else "Guardar Cambios",
     ) {
         // Avatar selector - Ahora con fondo blanco para resaltar sobre el gris
         Box(

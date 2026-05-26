@@ -402,11 +402,11 @@ fun SearchBar(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 50.dp), // Altura mínima para que sea fácil de tocar
-        shape = RoundedCornerShape(16.dp), // Bordes bien redondeados
+        shape = RoundedCornerShape(12.dp), // Bordes consistentes con InputField
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary, // Borde de color primario al escribir
-            unfocusedBorderColor = Color.Transparent, // Sin borde cuando no se usa
+            unfocusedBorderColor = BorderGray, // Borde gris como en otros inputs
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
             focusedTextColor = MaterialTheme.colorScheme.onBackground,

@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.core.theme.*
+import com.example.fila_virtual.core.BackHandler
 
 @Composable
 fun FormHeader(
@@ -31,6 +32,7 @@ fun FormHeader(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler(onBack = onBack)
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = LightBackground // Fondo gris uniforme

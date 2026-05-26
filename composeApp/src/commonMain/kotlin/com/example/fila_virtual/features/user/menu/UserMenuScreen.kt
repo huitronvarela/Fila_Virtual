@@ -21,8 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.user.UserViewModel // <--- IMPORTANTE: Importamos tu cerebro
 
-private val PrimaryOrange = Color(0xFFF05A32)
-private val LightSurface = Color(0xFFFFFFFF)
+import com.example.fila_virtual.core.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

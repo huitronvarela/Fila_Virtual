@@ -23,3 +23,9 @@ val TrafficRed = Color(0xFFDC2626)
 val TrafficGreen = Color(0xFF2E7D32)
 val TrafficYellow = Color(0xFFFFC107)
 val SoftRedBg = Color(0xFFFFEBEE)
+
+// ... (tu código anterior de color.kt)
+
+
+val ActionBlue = Color(0xFF2196F3)
+val VibrantOrange = Color(0xFFEE5B11)

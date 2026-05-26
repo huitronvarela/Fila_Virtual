@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.core.BackHandler
 
@@ -29,18 +28,22 @@ private val LightSurface = Color(0xFFFFFFFF)
 @Composable
 fun UserMenuScreen(
     establecimientoId: String,
-    nombreEstablecimiento: String, // Para ponerlo en el título arriba
+    nombreEstablecimiento: String,
     onBack: () -> Unit,
-    onAddToCart: (Producto) -> Unit // Para cuando el cliente le dé al botón "+"
+    userViewModel: UserViewModel // <--- Recibimos el UserViewModel para acceder al carrito
 ) {
-    val viewModel = remember { UserMenuViewModel() }
-    val productos by viewModel.productos.collectAsState()
+    val menuViewModel = remember { UserMenuViewModel() }
+    val productos by menuViewModel.productos.collectAsState()
+
+    // Estado para mostrar una confirmación rápida cuando agregas algo
+    var showSnackbar by remember { mutableStateOf(false) }
+    var lastAddedProduct by remember { mutableStateOf("") }
 
     BackHandler(onBack = onBack)
 
     // En cuanto se abre la pantalla, le decimos al cerebro que cargue el menú de este local
     LaunchedEffect(establecimientoId) {
-        viewModel.cargarMenu(establecimientoId)
+        menuViewModel.cargarMenu(establecimientoId)
     }
 
     Scaffold(
@@ -55,7 +58,26 @@ fun UserMenuScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        // Agregamos un Snackbar para darle feedback al usuario
+        snackbarHost = {
+            if (showSnackbar) {
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    action = {
+                        TextButton(onClick = { showSnackbar = false }) {
+                            Text("OK", color = PrimaryOrange)
+                        }
+                    }
+                ) {
+                    Text("$lastAddedProduct agregado al carrito")
+                }
+                LaunchedEffect(showSnackbar) {
+                    kotlinx.coroutines.delay(2000)
+                    showSnackbar = false
+                }
+            }
+        }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (productos.isEmpty()) {
@@ -67,12 +89,21 @@ fun UserMenuScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // MÉTODO A PRUEBA DE BALAS
                     items(productos.size) { index ->
                         val producto = productos[index]
                         ProductoClienteCard(
                             producto = producto,
-                            onAddClick = { onAddToCart(producto) }
+                            onAddClick = {
+                                // AQUÍ ESTÁ LA MAGIA: Guardamos en el carrito de verdad
+                                userViewModel.agregarAlCarrito(
+                                    idProducto = producto.id,
+                                    nombre = producto.nombre,
+                                    precio = producto.precio
+                                )
+                                // Mostramos el mensajito de éxito
+                                lastAddedProduct = producto.nombre
+                                showSnackbar = true
+                            }
                         )
                     }
                 }
@@ -90,7 +121,6 @@ fun ProductoClienteCard(producto: Producto, onAddClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Cuadrito de la imagen (Placeholder por ahora)
             Box(
                 modifier = Modifier
                     .size(100.dp)
@@ -117,7 +147,6 @@ fun ProductoClienteCard(producto: Producto, onAddClick: () -> Unit) {
                     Text(text = "$${producto.precio}", color = PrimaryOrange, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                 }
 
-                // Botón de Agregar al carrito
                 Surface(
                     modifier = Modifier
                         .size(40.dp)

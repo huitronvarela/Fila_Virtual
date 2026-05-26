@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
+import androidx.compose.runtime.saveable.rememberSaveable
 
 // Colores de marca
 private val MPBlue = Color(0xFF009EE3)
@@ -48,8 +49,8 @@ fun BilleteraScreen(
     val usuario = viewModel.usuario
     val metodosPago = usuario?.metodosPago ?: emptyList()
 
-    var showBottomSheet by remember { mutableStateOf(false) }
-    var currentSheetView by remember { mutableStateOf(BottomSheetStateView.SELECCION_METODO) }
+    var showBottomSheet by rememberSaveable { mutableStateOf(false) }
+    var currentSheetView by rememberSaveable { mutableStateOf(BottomSheetStateView.SELECCION_METODO) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
 

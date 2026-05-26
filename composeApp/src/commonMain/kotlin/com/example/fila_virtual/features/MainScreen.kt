@@ -13,16 +13,17 @@ import com.example.fila_virtual.features.admin.AdminMainScreen
 import com.example.fila_virtual.features.empleados.EmpleadoMainScreen
 import com.example.fila_virtual.features.user.ClienteMainScreen
 import com.example.fila_virtual.features.user.UserViewModel
-
+import androidx.compose.runtime.saveable.rememberSaveable
 @Composable
 fun MainScreen(
     viewModel: UserViewModel = remember { UserViewModel() },
     onLogout: () -> Unit
 ) {
     val usuario = viewModel.usuario
-    val isLoading = viewModel.isLoading
 
-    if (isLoading || usuario == null) {
+    // CAMBIO AQUÍ: Solo mostramos la carga inicial si no tenemos los datos del usuario aún.
+    // Esto evita que la app se destruya cuando un botón use isLoading = true.
+    if (usuario == null) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -33,11 +34,10 @@ fun MainScreen(
         }
     } else {
         // --- DEPURACIÓN ---
-        // Esto aparecerá en tu Logcat/Consola para confirmar qué está pasando
         val rolDetectado = usuario.rolGlobal.lowercase().trim()
         println("DEBUG_ROLE: El usuario ${usuario.email} tiene el rol: '$rolDetectado'")
 
-        // Enrutador basado en el rol del usuario (Normalizado)
+        // Enrutador basado en el rol del usuario
         when (rolDetectado) {
             "admin" -> {
                 AdminMainScreen(viewModel = viewModel, onLogout = onLogout)
@@ -46,7 +46,6 @@ fun MainScreen(
                 EmpleadoMainScreen(viewModel = viewModel, onLogout = onLogout)
             }
             else -> {
-                // Si llega aquí, es porque el rol no es admin ni empleado (ej. "cliente")
                 ClienteMainScreen(viewModel = viewModel, onLogout = onLogout)
             }
         }

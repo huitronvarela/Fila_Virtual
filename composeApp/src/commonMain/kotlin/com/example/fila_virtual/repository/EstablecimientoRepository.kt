@@ -1,22 +1,27 @@
 package com.example.fila_virtual.repository
 
 import com.example.fila_virtual.data.Establecimiento
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.channels.awaitClose
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.firestore.firestore
+import dev.gitlive.firebase.firestore.where
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.map
 
 class EstablecimientoRepository {
-    private val db = FirebaseFirestore.getInstance()
+    private val db = Firebase.firestore
     private val establecimientosRef = db.collection("establecimientos")
 
     suspend fun guardarEstablecimiento(establecimiento: Establecimiento): Result<Unit> {
         return try {
-            val id = establecimiento.id.ifEmpty { establecimientosRef.document().id }
-            val finalEstablecimiento = establecimiento.copy(id = id)
+            // Generamos la referencia: si no tiene ID, Firebase crea uno nuevo
+            val docRef = if (establecimiento.id.isEmpty()) {
+                establecimientosRef.document
+            } else {
+                establecimientosRef.document(establecimiento.id)
+            }
 
-            establecimientosRef.document(id).set(finalEstablecimiento).await()
+            val finalEstablecimiento = establecimiento.copy(id = docRef.id)
+            docRef.set(finalEstablecimiento)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -25,40 +30,27 @@ class EstablecimientoRepository {
 
     suspend fun actualizarEstado(id: String, activo: Boolean): Result<Unit> {
         return try {
-            establecimientosRef.document(id).update("activo", activo).await()
+            establecimientosRef.document(id).update("activo" to activo)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    fun getEstablecimientos(): Flow<List<Establecimiento>> = callbackFlow {
-        val subscription = establecimientosRef.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                close(error)
-                return@addSnapshotListener
-            }
-            if (snapshot != null) {
-                val establecimientos = snapshot.toObjects(Establecimiento::class.java)
-                trySend(establecimientos)
-            }
+    // --- ESTAS SON LAS FUNCIONES QUE FALTABAN ---
+
+    fun getEstablecimientos(): Flow<List<Establecimiento>> {
+        return establecimientosRef.snapshots.map { snapshot ->
+            snapshot.documents.map { it.data<Establecimiento>() }
         }
-        awaitClose { subscription.remove() }
     }
 
-    fun getEstablecimientosByOwner(ownerUid: String): Flow<List<Establecimiento>> = callbackFlow {
-        val subscription = establecimientosRef
-            .whereEqualTo("ownerUid", ownerUid)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val establecimientos = snapshot.toObjects(Establecimiento::class.java)
-                    trySend(establecimientos)
-                }
+    fun getEstablecimientosByOwner(ownerUid: String): Flow<List<Establecimiento>> {
+        // Importante: Asegúrate de tener importado dev.gitlive.firebase.firestore.where arriba
+        return establecimientosRef.where { "ownerUid" equalTo ownerUid }
+            .snapshots
+            .map { snapshot ->
+                snapshot.documents.map { it.data<Establecimiento>() }
             }
-        awaitClose { subscription.remove() }
     }
 }

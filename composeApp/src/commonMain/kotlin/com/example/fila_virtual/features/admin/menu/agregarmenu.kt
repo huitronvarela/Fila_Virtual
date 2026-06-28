@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -67,6 +68,7 @@ fun AgregarPlatilloScreen(
     var categoriaSeleccionada by remember { mutableStateOf(productoToEdit?.categoria ?: "") }
     
     var showSuccessSheet by remember { mutableStateOf(false) }
+    var showNoEstablecimientosAlert by remember { mutableStateOf(false) }
 
     val haptic = LocalHapticFeedback.current
     BackHandler(onBack = onBack)
@@ -123,6 +125,64 @@ fun AgregarPlatilloScreen(
                         viewModel.resetState()
                         onBack() 
                     },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        "Entendido",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+
+    if (showNoEstablecimientosAlert) {
+        ModalBottomSheet(
+            onDismissRequest = { showNoEstablecimientosAlert = false },
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = PrimaryOrange,
+                    modifier = Modifier.size(80.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "Atención",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGray,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "No tienes ningún establecimiento creado. Debes crear un establecimiento primero antes de poder agregar platillos a un menú.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MediumGray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Button(
+                    onClick = { showNoEstablecimientosAlert = false },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     shape = RoundedCornerShape(16.dp)
@@ -222,7 +282,13 @@ fun AgregarPlatilloScreen(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showSucursalSelector = true },
+                    .clickable { 
+                        if (establecimientos.isEmpty()) {
+                            showNoEstablecimientosAlert = true
+                        } else {
+                            showSucursalSelector = true 
+                        }
+                    },
                 border = BorderStroke(1.dp, BorderGray)
             ) {
                 Row(

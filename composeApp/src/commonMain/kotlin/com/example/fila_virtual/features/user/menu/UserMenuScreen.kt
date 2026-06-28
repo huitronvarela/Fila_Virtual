@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.features.user.UserViewModel
 
 private val PrimaryOrange = Color(0xFFF05A32)
 private val LightSurface = Color(0xFFFFFFFF)

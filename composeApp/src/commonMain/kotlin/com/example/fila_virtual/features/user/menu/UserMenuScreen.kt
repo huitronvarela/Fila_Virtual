@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.core.BackHandler
+import com.example.fila_virtual.features.user.UserViewModel
 
 import com.example.fila_virtual.core.theme.*
 

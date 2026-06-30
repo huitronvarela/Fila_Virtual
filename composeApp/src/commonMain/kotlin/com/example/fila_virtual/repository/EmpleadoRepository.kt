@@ -3,17 +3,29 @@ package com.example.fila_virtual.repository
 import com.example.fila_virtual.data.Empleado
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
-import dev.gitlive.firebase.firestore.where // Importación necesaria para la extensión query
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
 class EmpleadoRepository {
-    private val firestore = Firebase.firestore
+    private val db = Firebase.firestore
 
-    suspend fun registrarEmpleado(empleado: Empleado): Result<Unit> {
+    suspend fun registrarEmpleado(establecimientoId: String, empleado: Empleado): Result<Unit> {
+        if (establecimientoId.isBlank()) return Result.failure(Exception("ID de establecimiento no válido"))
+        
         return try {
-            val empleadosRef = firestore.collection("empleados")
-            val docRef = if (empleado.id.isEmpty()) empleadosRef.document else empleadosRef.document(empleado.id)
-            val empleadoConId = empleado.copy(id = docRef.id)
-            docRef.set(empleadoConId)
+            val docRef = db.collection("establecimientos")
+                .document(establecimientoId)
+                .collection("empleados")
+                .document(empleado.uid)
+
+            val timestamp = Clock.System.now().toEpochMilliseconds()
+            val empleadoFinal = empleado.copy(
+                joinedAt = if (empleado.joinedAt == 0L) timestamp else empleado.joinedAt,
+                updatedAt = timestamp
+            )
+
+            docRef.set(empleadoFinal)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -21,16 +33,30 @@ class EmpleadoRepository {
     }
 
     suspend fun obtenerEmpleados(establecimientoId: String): Result<List<Empleado>> {
+        if (establecimientoId.isBlank()) return Result.success(emptyList())
+        
         return try {
-            val snapshot = firestore.collection("empleados")
-                .where("establecimientoId", equalTo = establecimientoId)
+            val snapshot = db.collection("establecimientos")
+                .document(establecimientoId)
+                .collection("empleados")
                 .get()
-            val empleados = snapshot.documents.mapNotNull {
-                it.data<Empleado>()
-            }
+
+            val empleados = snapshot.documents.mapNotNull { it.data<Empleado>() }
             Result.success(empleados)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    fun getEmpleadosFlow(establecimientoId: String): Flow<List<Empleado>> {
+        if (establecimientoId.isBlank()) return kotlinx.coroutines.flow.flowOf(emptyList())
+        
+        return db.collection("establecimientos")
+            .document(establecimientoId)
+            .collection("empleados")
+            .snapshots
+            .map { snapshot ->
+                snapshot.documents.map { it.data<Empleado>() }
+            }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.fila_virtual.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import com.example.fila_virtual.core.checkPasswordRequirements
@@ -46,6 +48,8 @@ fun InputField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     isError: Boolean = false,
+    errorMessage: String? = null,
+    enabled: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -64,6 +68,7 @@ fun InputField(
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
             isError = isError,
+            enabled = enabled,
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             visualTransformation = visualTransformation,
@@ -83,9 +88,19 @@ fun InputField(
                 unfocusedLeadingIconColor = MediumGray,
                 errorLeadingIconColor = MaterialTheme.colorScheme.error,
                 focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                unfocusedTextColor = MaterialTheme.colorScheme.onBackground
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                disabledTextColor = MediumGray,
+                disabledBorderColor = BorderGray
             )
         )
+        AnimatedVisibility(visible = isError && errorMessage != null) {
+            Text(
+                text = errorMessage ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            )
+        }
     }
 }
 
@@ -100,7 +115,9 @@ fun PasswordInputField(
     leadingIcon: ImageVector? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    isError: Boolean = false
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    enabled: Boolean = true
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -118,6 +135,7 @@ fun PasswordInputField(
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
             isError = isError,
+            enabled = enabled,
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -127,7 +145,7 @@ fun PasswordInputField(
             },
             trailingIcon = {
                 val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
-                IconButton(onClick = { onVisibilityChange(!passwordVisible) }) {
+                IconButton(onClick = { onVisibilityChange(!passwordVisible) }, enabled = enabled) {
                     Icon(imageVector = image, contentDescription = null)
                 }
             },
@@ -145,9 +163,19 @@ fun PasswordInputField(
                 focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedTrailingIconColor = MediumGray,
                 focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                unfocusedTextColor = MaterialTheme.colorScheme.onBackground
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                disabledTextColor = MediumGray,
+                disabledBorderColor = BorderGray
             )
         )
+        AnimatedVisibility(visible = isError && errorMessage != null) {
+            Text(
+                text = errorMessage ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            )
+        }
     }
 }
 
@@ -215,7 +243,12 @@ fun TermsCheckbox(
 }
 
 @Composable
-fun ActionButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
+fun ActionButton(
+    text: String,
+    isLoading: Boolean = false,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -224,7 +257,7 @@ fun ActionButton(text: String, isLoading: Boolean, onClick: () -> Unit) {
             disabledContainerColor = BorderGray
         ),
         shape = RoundedCornerShape(16.dp),
-        enabled = !isLoading
+        enabled = enabled && !isLoading,
     ) {
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
@@ -311,7 +344,6 @@ fun NavigationLink(textMain: String, textLink: String, onClick: () -> Unit) {
 fun PasswordStrengthBar(password: String) {
     val requirements = checkPasswordRequirements(password)
 
-    // Sumamos los requisitos cumplidos
     var score = 0
     if (requirements.hasMinLength) score++
     if (requirements.hasUpperCase) score++
@@ -320,7 +352,6 @@ fun PasswordStrengthBar(password: String) {
 
     val TrafficYellow = Color(0xFFFFC107)
 
-    // Asignamos: 1 = Rojo, 2 y 3 = Amarillo, 4 = Verde
     val barColor = when (score) {
         1 -> TrafficRed
         2 -> TrafficYellow
@@ -339,7 +370,6 @@ fun PasswordStrengthBar(password: String) {
     }
 
     Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-        // 1. La barra de progreso visual
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -357,7 +387,6 @@ fun PasswordStrengthBar(password: String) {
             }
         }
 
-        // 2. El texto de estado (Débil, Segura, etc.)
         Text(
             text = statusText,
             style = MaterialTheme.typography.labelSmall,
@@ -365,11 +394,10 @@ fun PasswordStrengthBar(password: String) {
             modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
         )
 
-        // 3. Texto fijo informativo (no interactivo)
         Text(
             text = "Tu contraseña debe contener:\n• Mínimo 9 caracteres\n• Al menos una letra mayúscula\n• Al menos un número\n• Un carácter especial (ej. @, #, $, !)",
             style = MaterialTheme.typography.labelSmall,
-            color = MediumGray, // Siempre se quedará gris
+            color = MediumGray,
             modifier = Modifier.padding(top = 4.dp)
         )
     }
@@ -401,12 +429,12 @@ fun SearchBar(
         },
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 50.dp), // Altura mínima para que sea fácil de tocar
-        shape = RoundedCornerShape(12.dp), // Bordes consistentes con InputField
+            .heightIn(min = 50.dp),
+        shape = RoundedCornerShape(12.dp),
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary, // Borde de color primario al escribir
-            unfocusedBorderColor = BorderGray, // Borde gris como en otros inputs
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = BorderGray,
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
             focusedTextColor = MaterialTheme.colorScheme.onBackground,

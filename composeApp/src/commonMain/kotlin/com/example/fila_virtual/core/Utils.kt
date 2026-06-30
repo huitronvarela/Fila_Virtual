@@ -8,27 +8,27 @@ import androidx.compose.ui.text.input.VisualTransformation
 /**
  * Mapea los mensajes de error técnicos a mensajes amigables para el usuario.
  */
-
-
 fun mapFirebaseError(message: String?): String {
-    if (message == null) return "Ocurrió un error inesperado."
+    if (message == null) return ErrorMessages.UNKNOWN_ERROR
 
     return when {
+        message.contains("credential is incorrect") || message.contains("INVALID_LOGIN_CREDENTIALS") ->
+            ErrorMessages.INVALID_CREDENTIALS
         message.contains("invalid-email") || message.contains("INVALID_EMAIL") ->
-            "El correo electrónico no tiene un formato válido."
+            ErrorMessages.INVALID_EMAIL
         message.contains("user-not-found") || message.contains("USER_NOT_FOUND") ->
-            "No existe ninguna cuenta con este correo."
+            ErrorMessages.USER_NOT_FOUND
         message.contains("wrong-password") || message.contains("INVALID_PASSWORD") ->
-            "La contraseña es incorrecta."
+            ErrorMessages.INVALID_CREDENTIALS
         message.contains("email-already-in-use") || message.contains("EMAIL_EXISTS") ->
-            "Este correo electrónico ya está registrado."
+            ErrorMessages.EMAIL_ALREADY_IN_USE
         message.contains("weak-password") || message.contains("WEAK_PASSWORD") ->
-            "La contraseña es muy débil."
+            ErrorMessages.PASSWORD_WEAK
         message.contains("network-request-failed") ->
-            "Error de conexión. Revisa tu internet."
+            ErrorMessages.NETWORK_ERROR
         message.contains("too-many-requests") ->
-            "Demasiados intentos fallidos. Inténtalo más tarde."
-        else -> "Error: $message"
+            ErrorMessages.TOO_MANY_REQUESTS
+        else -> ErrorMessages.UNKNOWN_ERROR
     }
 }
 

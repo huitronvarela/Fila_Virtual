@@ -20,6 +20,7 @@ import com.example.fila_virtual.features.user.billetera.BilleteraScreen
 import com.example.fila_virtual.features.user.carrio_compra.CartScreen
 import com.example.fila_virtual.features.user.menu.UserMenuScreen
 import com.example.fila_virtual.data.Establecimiento
+import com.example.fila_virtual.perfil.EditProfileScreen
 
 @Composable
 fun ClienteMainScreen(
@@ -37,8 +38,11 @@ fun ClienteMainScreen(
 
     // Prioridad de navegación: Edición > Carrito > Pantalla Principal
     if (isEditingProfile) {
-        // Asegúrate de tener este archivo EditProfileScreen creado o ajusta el nombre según tu proyecto
-        // EditProfileScreen(...)
+        EditProfileScreen(
+            usuario = usuario,
+            viewModel = viewModel,
+            onBack = { isEditingProfile = false }
+        )
     } else if (showCart) {
         CartScreen(
             viewModel = viewModel, // Conectado al cerebro real

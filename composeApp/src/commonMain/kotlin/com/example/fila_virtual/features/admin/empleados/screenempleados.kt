@@ -31,7 +31,7 @@ import com.example.fila_virtual.features.admin.FormState
 fun ScreenEmpleados(
     establecimientoId: String,
     onNavigateToAdd: () -> Unit,
-    onEditEmpleado: (Empleado) -> Unit,
+    onEditEmpleado: (EmpleadoDetalle) -> Unit,
     viewModel: EmpleadoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
@@ -48,7 +48,9 @@ fun ScreenEmpleados(
 
     val listaFiltrada = empleados.filter {
         it.nombre.contains(searchQuery, ignoreCase = true) ||
-        it.rol.contains(searchQuery, ignoreCase = true)
+                it.rol.contains(searchQuery, ignoreCase = true) ||
+                it.correo.contains(searchQuery, ignoreCase = true)
+
     }
 
     Scaffold(
@@ -163,7 +165,7 @@ fun ScreenEmpleados(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(bottom = 88.dp)
                     ) {
-                        items(listaFiltrada, key = { it.id }) { empleado ->
+                        items(listaFiltrada, key = { it.uid }) { empleado ->
                             CardEmpleado(
                                 empleado = empleado,
                                 onEdit = { onEditEmpleado(empleado) }
@@ -178,7 +180,7 @@ fun ScreenEmpleados(
 
 @Composable
 fun CardEmpleado(
-    empleado: Empleado,
+    empleado: EmpleadoDetalle,
     onEdit: () -> Unit
 ) {
     Card(
@@ -195,7 +197,6 @@ fun CardEmpleado(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar con indicador de estado
             Box(modifier = Modifier.size(56.dp)) {
                 Box(
                     modifier = Modifier
@@ -204,6 +205,7 @@ fun CardEmpleado(
                         .background(LightGray),
                     contentAlignment = Alignment.Center
                 ) {
+                    // Opcional: Si luego agregas la foto de la colección 'users', puedes usar AsyncImage aquí
                     Icon(
                         Icons.Default.Person,
                         contentDescription = null,
@@ -232,14 +234,21 @@ fun CardEmpleado(
                     fontWeight = FontWeight.Bold,
                     color = DarkGray
                 )
+                // 🚀 Añadí el correo aquí para que la UI se vea más completa
                 Text(
-                    text = empleado.rol,
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = empleado.correo,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MediumGray
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = empleado.rol.uppercase(), // Un buen toque visual
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PrimaryOrange,
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Badge de estado
                 val badgeBg = if (empleado.activo) Color(0xFFE8F5E9) else ExtraLightGray
                 val badgeColor = if (empleado.activo) TrafficGreen else MediumGray
                 Surface(color = badgeBg, shape = RoundedCornerShape(8.dp)) {

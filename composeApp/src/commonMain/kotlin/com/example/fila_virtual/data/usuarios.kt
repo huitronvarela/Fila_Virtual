@@ -19,12 +19,10 @@ data class TarjetaGuardada(
  * Roles globales de la plataforma.
  * CLIENTE: Usuario que realiza pedidos.
  * ADMIN: Administrador general con acceso a todo el sistema.
- * EMPLEADO: Usuario con permisos específicos en algún establecimiento.
  */
 object Roles {
     const val CLIENTE = "cliente"
     const val ADMIN = "admin"
-    const val EMPLEADO = "empleado"
 }
 
 @Serializable

@@ -28,6 +28,7 @@ import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 
 @Composable
 fun EstablecimientosScreen(
+    currentAdminUid: String,
     onBack: () -> Unit,
     onSelectEstablecimiento: (String) -> Unit,
     onRegisterNew: () -> Unit,
@@ -38,7 +39,9 @@ fun EstablecimientosScreen(
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24).value.dp
     var searchQuery by remember { mutableStateOf("") }
-
+    LaunchedEffect(currentAdminUid) {
+        viewModel.setOwnerUid(currentAdminUid)
+    }
     // Obtenemos la lista real desde el ViewModel
     val establecimientos by viewModel.establecimientos.collectAsState()
 

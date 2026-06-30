@@ -3,22 +3,23 @@ package com.example.fila_virtual.features.admin
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fila_virtual.components.BottomNavigationBar
 import com.example.fila_virtual.components.NavigationDefaults
-import com.example.fila_virtual.core.WindowSize
+import com.example.fila_virtual.data.Establecimiento
+import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.admin.empleados.AnadirEmpleadoScreen
+import com.example.fila_virtual.features.admin.empleados.EmpleadoDetalle
 import com.example.fila_virtual.features.admin.empleados.ScreenEmpleados
 import com.example.fila_virtual.features.admin.inicio.AñadirEstablecimientoScreen
 import com.example.fila_virtual.features.admin.inicio.EstablecimientosScreen
 import com.example.fila_virtual.features.admin.inicio.InicioAdminScreen
 import com.example.fila_virtual.features.admin.menu.AgregarPlatilloScreen
 import com.example.fila_virtual.features.admin.menu.ScreenMenu
-import com.example.fila_virtual.features.user.EditProfileScreen
+import com.example.fila_virtual.perfil.EditProfileScreen
 import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.perfil.ProfileComponent
 import kotlinx.coroutines.launch
@@ -40,9 +41,9 @@ fun AdminMainScreen(
     
     var selectedEstablecimientoId by remember { mutableStateOf("") }
     
-    var productoToEdit by remember { mutableStateOf<com.example.fila_virtual.data.Producto?>(null) }
-    var empleadoToEdit by remember { mutableStateOf<com.example.fila_virtual.data.Empleado?>(null) }
-    var establecimientoToEdit by remember { mutableStateOf<com.example.fila_virtual.data.Establecimiento?>(null) }
+    var productoToEdit by remember { mutableStateOf<Producto?>(null) }
+    var empleadoToEdit by remember { mutableStateOf<EmpleadoDetalle?>(null) }
+    var establecimientoToEdit by remember { mutableStateOf<Establecimiento?>(null) }
 
     if (isAddingDish) {
         AgregarPlatilloScreen(
@@ -56,9 +57,10 @@ fun AdminMainScreen(
         )
     } else if (isAddingEmployee) {
         AnadirEmpleadoScreen(
+            empleado = empleadoToEdit,
             establecimientoId = selectedEstablecimientoId,
-            empleadoToEdit = empleadoToEdit,
-            onBack = { 
+            viewModel = viewModel(),
+            onNavigateBack = {
                 isAddingEmployee = false
                 empleadoToEdit = null
             }
@@ -80,6 +82,7 @@ fun AdminMainScreen(
         )
     } else if (isManagingEstablecimientos) {
         EstablecimientosScreen(
+            currentAdminUid = usuario.uid,
             onBack = { isManagingEstablecimientos = false },
             onSelectEstablecimiento = { id ->
                 selectedEstablecimientoId = id

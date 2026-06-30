@@ -1,4 +1,4 @@
-package com.example.fila_virtual.features.user
+package com.example.fila_virtual.perfil
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -21,7 +21,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.fila_virtual.perfil.ProfileHeader
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.core.PhoneVisualTransformation
@@ -31,6 +30,7 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.core.PermissionType
 import com.example.fila_virtual.core.rememberPermissionsManager
+import com.example.fila_virtual.features.user.UserViewModel
 import fila_virtual.composeapp.generated.resources.Res
 import fila_virtual.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
@@ -145,7 +145,7 @@ fun EditProfileScreen(
         InputField(
             label = "Nombre completo",
             value = nombre,
-            onValueChange = { if (isValidName(it)) nombre = it },
+            onValueChange = { if (isValidName(it) || it.isEmpty()) nombre = it },
             placeholder = stringResource(Res.string.placeholder_name),
             leadingIcon = Icons.Filled.Person,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),

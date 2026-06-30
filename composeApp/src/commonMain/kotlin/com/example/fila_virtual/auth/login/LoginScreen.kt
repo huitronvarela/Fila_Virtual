@@ -9,6 +9,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -29,6 +31,7 @@ import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.NavigationLink
 import com.example.fila_virtual.components.PasswordInputField
 import com.example.fila_virtual.components.SocialLoginBlock
+import com.example.fila_virtual.core.ErrorMessages
 import com.example.fila_virtual.core.LocalWindowSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -60,7 +63,7 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val windowSize = LocalWindowSize.current
-
+    val context = LocalContext.current
     val authRepository = remember { AuthRepository() }
 
     var email by remember { mutableStateOf("") }
@@ -80,7 +83,8 @@ fun LoginScreen(
     var inputOtp by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var newPasswordVisible by remember { mutableStateOf(false) }
-
+    val isLoginEnabled = email.isNotBlank() && isValidEmail(email) && password.isNotBlank()
+    val isRecoveryEnabled = recoveryEmail.isNotBlank() && isValidEmail(recoveryEmail)
 
     Column(
         modifier = Modifier
@@ -152,19 +156,19 @@ fun LoginScreen(
             )
         }
 
-        ActionButton(text = stringResource(Res.string.btn_login), isLoading = isLoading) {
-            if (email.isBlank() || password.isBlank()) {
-                errorMessage = "Por favor llena todos los campos"
-                return@ActionButton
-            }
+        ActionButton(
+            text = stringResource(Res.string.btn_login),
+            isLoading = isLoading,
+            enabled = isLoginEnabled
+        ) {
             scope.launch {
                 isLoading = true
-                errorMessage = ""
                 try {
                     Firebase.auth.signInWithEmailAndPassword(email.trim(), password.trim())
                     onNavigate(Screens.Home)
                 } catch (e: Exception) {
-                    errorMessage = mapFirebaseError(e.message)
+                    val errorMsg = mapFirebaseError(e.message)
+                    Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
                 } finally {
                     isLoading = false
                 }
@@ -228,17 +232,17 @@ fun LoginScreen(
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
-                        ActionButton(text = "Enviar Código", isLoading = isRecovering) {
-                            if (recoveryEmail.isBlank() || !isValidEmail(recoveryEmail)) {
-                                recoveryMessage = "Ingresa un correo válido"
-                                return@ActionButton
-                            }
+                        ActionButton(
+                            text = "Enviar Código",
+                            isLoading = isRecovering,
+                            enabled = isRecoveryEnabled
+                        ) {
                             scope.launch {
                                 isRecovering = true
                                 if (authRepository.sendPasswordResetOtp(recoveryEmail.trim())) {
                                     recoveryStep = 2
                                 } else {
-                                    recoveryMessage = "Error al enviar código"
+                                    recoveryMessage = ErrorMessages.OTP_SEND_ERROR
                                 }
                                 isRecovering = false
                             }
@@ -294,6 +298,10 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         ActionButton(text = "Actualizar", isLoading = isRecovering) {
+                            if (newPassword.length < 8) {
+                                recoveryMessage = ErrorMessages.PASSWORD_TOO_SHORT
+                                return@ActionButton
+                            }
                             scope.launch {
                                 isRecovering = true
                                 delay(1000)

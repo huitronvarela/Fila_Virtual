@@ -13,15 +13,13 @@ class EstablecimientoRepository {
 
     suspend fun guardarEstablecimiento(establecimiento: Establecimiento): Result<Unit> {
         return try {
-            // Generamos la referencia: si no tiene ID, Firebase crea uno nuevo
-            val docRef = if (establecimiento.id.isEmpty()) {
-                establecimientosRef.document
+            if (establecimiento.id.isEmpty()) {
+                // Para nuevos locales, usamos add() que genera el ID automáticamente y evita el error de segmentos
+                val docRef = establecimientosRef.add(establecimiento)
+                docRef.update("id" to docRef.id)
             } else {
-                establecimientosRef.document(establecimiento.id)
+                establecimientosRef.document(establecimiento.id).set(establecimiento)
             }
-
-            val finalEstablecimiento = establecimiento.copy(id = docRef.id)
-            docRef.set(finalEstablecimiento)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -29,6 +27,7 @@ class EstablecimientoRepository {
     }
 
     suspend fun actualizarEstado(id: String, activo: Boolean): Result<Unit> {
+        if (id.isEmpty()) return Result.failure(Exception("ID no válido"))
         return try {
             establecimientosRef.document(id).update("activo" to activo)
             Result.success(Unit)
@@ -37,8 +36,6 @@ class EstablecimientoRepository {
         }
     }
 
-    // --- ESTAS SON LAS FUNCIONES QUE FALTABAN ---
-
     fun getEstablecimientos(): Flow<List<Establecimiento>> {
         return establecimientosRef.snapshots.map { snapshot ->
             snapshot.documents.map { it.data<Establecimiento>() }
@@ -46,7 +43,6 @@ class EstablecimientoRepository {
     }
 
     fun getEstablecimientosByOwner(ownerUid: String): Flow<List<Establecimiento>> {
-        // Importante: Asegúrate de tener importado dev.gitlive.firebase.firestore.where arriba
         return establecimientosRef.where { "ownerUid" equalTo ownerUid }
             .snapshots
             .map { snapshot ->

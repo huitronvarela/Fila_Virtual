@@ -16,6 +16,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,7 +67,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
     val focusManager = LocalFocusManager.current
     val windowSize = LocalWindowSize.current 
     val authRepository = remember { AuthRepository() }
-
+    val context = LocalContext.current
     var nombre by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -260,7 +262,7 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                         if (authRepository.sendRegistrationOtp(email.trim())) {
                             showOtpSheet = true
                         } else {
-                            errorMessage = "Error al enviar código"
+                            errorMessage = ErrorMessages.OTP_SEND_ERROR
                         }
                         isLoading = false
                     }
@@ -358,11 +360,11 @@ fun RegisterScreen(onNavigate: (Screens) -> Unit) {
                             delay(1500)
                             onNavigate(Screens.Home)
                         } catch (e: Exception) {
-                            showOtpSheet = false
-                            errorMessage = mapFirebaseError(e.message)
+                            val errorMsg = mapFirebaseError(e.message)
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
                         }
                     } else {
-                        otpErrorMessage = "Código incorrecto"
+                        Toast.makeText(context, ErrorMessages.OTP_INVALID, Toast.LENGTH_SHORT).show()
                     }
                     isVerifyingOtp = false
                 }
@@ -480,7 +482,12 @@ fun OtpBottomSheet(
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
-            ActionButton("Verificar Código", isVerifying, onVerifyClick)
+            ActionButton(
+                text = "Verificar Código",
+                isLoading = isVerifying,
+                enabled = otpCode.length == 6,
+                onClick = onVerifyClick
+            )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 "Cancelar",

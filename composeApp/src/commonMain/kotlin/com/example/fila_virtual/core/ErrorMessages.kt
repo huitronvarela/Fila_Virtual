@@ -24,4 +24,61 @@ object ErrorMessages {
     // Errores de Red
     const val NETWORK_ERROR = "Error de conexión. Revisa tu internet."
     const val UNKNOWN_ERROR = "Ocurrió un error inesperado. Inténtalo más tarde."
+
+
+    // Errores de Carrito / Checkout
+
+    const val PAYMENT_REJECTED = "No pudimos procesar tu pago. Verifica tu tarjeta o intenta con otro método."
+
+    const val TURN_GENERATION_FAILED = "Tu pago fue exitoso, pero hubo un problema al generar el turno en el sistema. Por favor, muestra este mensaje en la cafetería."
+
+    const val CART_ITEM_UNAVAILABLE = "Uno o más productos en tu carrito ya no están disponibles."
+
+
+    // Errores de Sesión y Estado
+
+    const val SESSION_EXPIRED = "Tu sesión ha expirado. Por favor, inicia sesión nuevamente."
+
+
+    // Errores Genéricos y Base de Datos
+
+    const val DATABASE_ERROR = "No pudimos actualizar la información. Verifica tu conexión."
+
+
+    // Errores de Billetera y Carrito
+
+    const val NO_PAYMENT_METHOD_SELECTED = "Por favor, selecciona o agrega un método de pago para continuar."
+
+    const val CART_EMPTY = "Tu carrito está vacío. Agrega productos para continuar."
+
+
+    // Errores de Billetera (Wallet) y Tarjetas
+
+
+    const val INSUFFICIENT_FUNDS = "Saldo insuficiente. Por favor, recarga tu billetera."
+
+    const val INVALID_PAYMENT_AMOUNT = "Por favor, ingresa un monto válido mayor a $0."
+
+    const val TOP_UP_FAILED = "Hubo un error al intentar recargar tu saldo. Inténtalo de nuevo."
+
+    const val ERROR_REMOVING_CARD = "No pudimos eliminar la tarjeta. Verifica tu conexión."
+
+    const val DUPLICATE_CARD = "Esta tarjeta ya está vinculada a tu cuenta."
+
+    const val TRANSACTION_HISTORY_ERROR = "No pudimos cargar tu historial de movimientos."
+
+
+
+    // Validaciones de Tarjeta de Crédito/Débito
+
+
+    const val INVALID_CARD_NUMBER = "El número de tarjeta está incompleto o es inválido."
+
+    const val INVALID_EXPIRATION_DATE = "La fecha de vencimiento no es válida. Usa el formato MMAA."
+
+    const val CARD_EXPIRED = "Esta tarjeta ya ha expirado. Por favor, intenta con otra."
+
+    const val INVALID_CVV = "El código de seguridad (CVV) está incompleto."
+
+    const val ERROR_SAVING_CARD = "No pudimos guardar tu tarjeta en el sistema. Inténtalo más tarde."
 }

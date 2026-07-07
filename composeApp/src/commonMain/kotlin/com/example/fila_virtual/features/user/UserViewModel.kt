@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fila_virtual.core.ErrorMessages // <-- Import agregado para solucionar los errores
 import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
@@ -68,10 +69,11 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     if (data != null) {
                         usuario = data
                     } else {
-                        errorMessage = "Sincronizando datos..."
+                        errorMessage = ErrorMessages.USER_NOT_FOUND
                     }
                 } catch (e: Exception) {
-                    errorMessage = "Error: ${e.message}"
+                    errorMessage = ErrorMessages.DATABASE_ERROR
+                    println("Error técnico en loadUserData: ${e.message}")
                 } finally {
                     isLoading = false
                 }
@@ -128,17 +130,34 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
     }
 
     fun procesarPagoSeguro() {
-        if (numeroTarjeta.length < 16 || cvv.isEmpty() || fechaExpiracion.isEmpty()) {
-            errorMessage = "Por favor completa todos los campos correctamente."
+        // 1. Validaciones Locales (UX - Prevención de errores)
+        if (numeroTarjeta.length < 16) {
+            errorMessage = ErrorMessages.INVALID_CARD_NUMBER
             return
         }
 
+        if (cvv.length < 3) {
+            errorMessage = ErrorMessages.INVALID_CVV
+            return
+        }
+
+        if (fechaExpiracion.length < 4) {
+            errorMessage = ErrorMessages.INVALID_EXPIRATION_DATE
+            return
+        }
+
+        val mes = fechaExpiracion.substring(0, 2).toIntOrNull() ?: 0
+        if (mes !in 1..12) {
+            errorMessage = ErrorMessages.INVALID_EXPIRATION_DATE
+            return
+        }
+
+        // Si pasa todas las validaciones, procedemos
         isLoading = true
         errorMessage = ""
 
         viewModelScope.launch {
             try {
-                val mes = fechaExpiracion.substring(0, 2)
                 val anio = "20" + fechaExpiracion.substring(2, 4)
 
                 val client = HttpClient {
@@ -149,11 +168,11 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     contentType(ContentType.Application.Json)
                     setBody(buildJsonObject {
                         put("card_number", numeroTarjeta)
-                        put("expiration_month", mes.toInt())
+                        put("expiration_month", mes)
                         put("expiration_year", anio.toInt())
                         put("security_code", cvv)
                         put("cardholder", buildJsonObject {
-                            put("name", nombreTitular)
+                            put("name", nombreTitular.ifEmpty { "ALTOQUE USER" }) // Por si lo dejan vacío
                         })
                     })
                 }
@@ -170,7 +189,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
 
                         val nuevaTarjeta = TarjetaGuardada(
                             ultimos4 = ultimos4,
-                            marca = "VISA",
+                            marca = "VISA", // Idealmente esto se detecta dinámicamente con el BIN de la tarjeta, pero para la beta de AlToque está bien.
                             nombreTitular = nombreTitular,
                             expiracion = expiracionFormateada,
                             tokenId = tokenId
@@ -178,9 +197,14 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
 
                         val currentMethods = usuario?.metodosPago?.toMutableList() ?: mutableListOf()
                         val yaExiste = currentMethods.any { it.ultimos4 == ultimos4 }
-                        if (!yaExiste) {
-                            currentMethods.add(nuevaTarjeta)
+
+                        if (yaExiste) {
+                            isLoading = false
+                            errorMessage = ErrorMessages.DUPLICATE_CARD // Necesitas agregar esta constante si no lo hiciste en el paso anterior
+                            return@launch
                         }
+
+                        currentMethods.add(nuevaTarjeta)
 
                         val metodosComoMapa = currentMethods.map { t ->
                             mapOf(
@@ -192,6 +216,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                             )
                         }
 
+                        // Guardamos en la base de datos NoSQL
                         Firebase.firestore.collection("usuarios").document(userId)
                             .update(
                                 "metodosPago" to metodosComoMapa,
@@ -200,7 +225,8 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                             )
 
                         isLoading = false
-                        errorMessage = "¡Tarjeta vinculada con éxito (Sandbox)!"
+                        // Este mensaje es la clave (trigger) para que tu pantalla muestre la palomita verde
+                        errorMessage = "¡Tarjeta vinculada correctamente!"
 
                         numeroTarjeta = ""
                         nombreTitular = ""
@@ -208,15 +234,16 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                         cvv = ""
                     } else {
                         isLoading = false
-                        errorMessage = "Error: No hay una sesión activa."
+                        errorMessage = ErrorMessages.SESSION_EXPIRED
                     }
                 } else {
                     isLoading = false
-                    errorMessage = "Mercado Pago rechazó la tarjeta. Revisa los datos."
+                    errorMessage = ErrorMessages.PAYMENT_REJECTED
                 }
             } catch (e: Exception) {
                 isLoading = false
-                errorMessage = "Error de conexión: ${e.message}"
+                errorMessage = ErrorMessages.NETWORK_ERROR
+                println("Error de red en procesarPagoSeguro: ${e.message}")
             }
         }
     }
@@ -229,7 +256,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
             try {
                 val userId = Firebase.auth.currentUser?.uid
                 if (userId == null) {
-                    errorMessage = "Error: No hay una sesión activa."
+                    errorMessage = ErrorMessages.SESSION_EXPIRED
                     isLoading = false
                     return@launch
                 }
@@ -240,11 +267,12 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                 val userEmail = if (userDoc.contains("email")) userDoc.get<String>("email") else "test@test.com"
 
                 if (cardToken.isEmpty()) {
-                    errorMessage = "No tienes ninguna tarjeta vinculada."
+                    errorMessage = ErrorMessages.NO_PAYMENT_METHOD_SELECTED
                     isLoading = false
                     return@launch
                 }
 
+                // Restauramos la lógica de Ktor para el cobro
                 val client = HttpClient {
                     install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 }
@@ -271,22 +299,21 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     if (statusPago == "approved") {
                         errorMessage = "¡Cobro exitoso! El dinero ya está en Mercado Pago."
                     } else {
-                        errorMessage = "Cobro procesado pero en estado: $statusPago"
+                        errorMessage = ErrorMessages.PAYMENT_REJECTED
                     }
                 } else {
-                    val errorBody = response.bodyAsText()
-                    errorMessage = "Error en el cobro: ${response.status}"
-                    println("ERROR MERCADO PAGO: $errorBody")
+                    errorMessage = ErrorMessages.PAYMENT_REJECTED
+                    println("ERROR MERCADO PAGO: ${response.bodyAsText()}")
                 }
 
             } catch (e: Exception) {
-                errorMessage = "Fallo de conexión al cobrar: ${e.message}"
+                errorMessage = ErrorMessages.NETWORK_ERROR
+                println("Fallo de conexión al cobrar: ${e.message}")
             } finally {
                 isLoading = false
             }
         }
     }
-
 
     // ==========================================
     // 🛒 LÓGICA DEL CARRITO DE COMPRAS
@@ -295,7 +322,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
     private val _carrito = MutableStateFlow<List<ProductoCarrito>>(emptyList())
     val carrito: StateFlow<List<ProductoCarrito>> = _carrito
 
-    // Función para agregar un producto (Si ya existe, le suma 1 a la cantidad)
     fun agregarAlCarrito(idProducto: String, nombre: String, precio: Double) {
         val listaActual = _carrito.value.toMutableList()
         val itemExistente = listaActual.find { it.idProducto == idProducto }
@@ -309,16 +335,13 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         _carrito.value = listaActual
     }
 
-    // Función para limpiar el carrito después de pagar
     fun vaciarCarrito() {
         _carrito.value = emptyList()
     }
 
-    // Calcula el total a pagar multiplicando precio x cantidad
     fun calcularTotalCarrito(): Double {
         return _carrito.value.sumOf { it.precio * it.cantidad }
     }
-
 
     // ==========================================
     // 💳 FUNCIÓN DE COBRO + CREACIÓN DE PEDIDO REAL
@@ -330,7 +353,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
         onSuccess: () -> Unit
     ) {
         if (_carrito.value.isEmpty()) {
-            errorMessage = "El carrito está vacío"
+            errorMessage = ErrorMessages.CART_EMPTY
             return
         }
 
@@ -341,7 +364,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
             try {
                 val userId = Firebase.auth.currentUser?.uid
                 if (userId == null) {
-                    errorMessage = "Error: No hay una sesión activa."
+                    errorMessage = ErrorMessages.SESSION_EXPIRED
                     isLoading = false
                     return@launch
                 }
@@ -353,7 +376,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                 val descripcionReal = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
                 val montoTotalReal = calcularTotalCarrito()
 
-                // 3. Preparamos los datos para Firebase
+                // 3. Preparamos los datos para la base de datos NoSQL
                 val turnoGenerado = (1..99).random()
                 val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
 
@@ -365,8 +388,8 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     userId = userId,
                     establecimientoId = establecimientoId,
                     establecimientoNombre = establecimientoNombre,
-                    descripcion = descripcionReal, // <--- GUARDAMOS LA LISTA REAL DEL CARRITO
-                    total = montoTotalReal,        // <--- TOTAL CALCULADO REAL
+                    descripcion = descripcionReal,
+                    total = montoTotalReal,
                     estado = "RECIBIDO",
                     turno = turnoGenerado,
                     createdAt = now
@@ -375,14 +398,15 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                 // 4. Subimos el pedido y limpiamos todo
                 nuevoPedidoRef.set(nuevoPedido)
 
-                vaciarCarrito() // Vaciamos el carrito tras una compra exitosa
+                vaciarCarrito()
 
                 errorMessage = ""
                 isLoading = false
                 onSuccess()
 
             } catch (e: Exception) {
-                errorMessage = "Fallo al procesar el pedido: ${e.message}"
+                errorMessage = ErrorMessages.TURN_GENERATION_FAILED
+                println("Error NoSQL al guardar el pedido: ${e.message}")
                 isLoading = false
             }
         }

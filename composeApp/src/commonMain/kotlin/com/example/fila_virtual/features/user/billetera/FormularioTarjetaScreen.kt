@@ -25,6 +25,10 @@ import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 
+// IMPORTS PARA LOS RECURSOS DE TRADUCCIÓN
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.* // <-- Asegúrate de que este sea tu import de Res
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormularioTarjetaScreen(
@@ -64,13 +68,13 @@ fun FormularioTarjetaScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "¡Tarjeta vinculada!",
+                text = stringResource(Res.string.wallet_success_title),
                 style = typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = DarkGray
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Tu método de pago se ha guardado correctamente y está listo para usarse en AlToque.",
+                text = stringResource(Res.string.wallet_success_desc),
                 style = typography.bodyMedium,
                 color = MediumGray,
                 textAlign = TextAlign.Center
@@ -81,8 +85,6 @@ fun FormularioTarjetaScreen(
                 onClick = {
                     // 1. Recargamos los datos del usuario ahora que estamos listos
                     viewModel.loadUserData()
-                    // 2. Limpiamos el mensaje en el ViewModel para el futuro
-
                     // 3. Cerramos el Bottom Sheet
                     onSuccess()
                 },
@@ -92,12 +94,12 @@ fun FormularioTarjetaScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Aceptar", style = typography.titleMedium.copy(color = Color.White))
+                Text(stringResource(Res.string.wallet_accept_button), style = typography.titleMedium.copy(color = Color.White))
             }
         } else {
             // --- FORMULARIO ORIGINAL DE CAPTURA ---
             Text(
-                text = "Ingresa tu tarjeta",
+                text = stringResource(Res.string.wallet_enter_card_title),
                 style = typography.titleLarge.copy(
                     fontSize = windowSize.adaptiveSp(20)
                 ),
@@ -109,7 +111,7 @@ fun FormularioTarjetaScreen(
             OutlinedTextField(
                 value = viewModel.numeroTarjeta,
                 onValueChange = { viewModel.onNumeroTarjetaChange(it.filter { char -> char.isDigit() }) },
-                label = { Text("Número de la tarjeta", style = typography.bodyMedium) },
+                label = { Text(stringResource(Res.string.wallet_card_number), style = typography.bodyMedium) },
                 leadingIcon = {
                     Icon(
                         Icons.Default.CreditCard,
@@ -136,7 +138,7 @@ fun FormularioTarjetaScreen(
             OutlinedTextField(
                 value = viewModel.nombreTitular,
                 onValueChange = { viewModel.onNombreTitularChange(it.uppercase()) },
-                label = { Text("Nombre como aparece en la tarjeta", style = typography.bodyMedium) },
+                label = { Text(stringResource(Res.string.wallet_card_name), style = typography.bodyMedium) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -158,8 +160,8 @@ fun FormularioTarjetaScreen(
                 OutlinedTextField(
                     value = viewModel.fechaExpiracion,
                     onValueChange = { viewModel.onFechaExpiracionChange(it.filter { char -> char.isDigit() }) },
-                    label = { Text("Vencimiento", style = typography.bodyMedium) },
-                    placeholder = { Text("MMAA", style = typography.bodyMedium) },
+                    label = { Text(stringResource(Res.string.wallet_card_expiry), style = typography.bodyMedium) },
+                    placeholder = { Text(stringResource(Res.string.wallet_card_expiry_placeholder), style = typography.bodyMedium) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     visualTransformation = ExpirationDateVisualTransformation(),
                     singleLine = true,
@@ -177,7 +179,7 @@ fun FormularioTarjetaScreen(
                 OutlinedTextField(
                     value = viewModel.cvv,
                     onValueChange = { viewModel.onCvvChange(it.filter { char -> char.isDigit() }) },
-                    label = { Text("CVV", style = typography.bodyMedium) },
+                    label = { Text(stringResource(Res.string.wallet_card_cvv), style = typography.bodyMedium) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.weight(1f),
@@ -193,7 +195,7 @@ fun FormularioTarjetaScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Mensaje de error (solo visible si no es un mensaje exitoso)
+            // Mensaje de error
             if (viewModel.errorMessage.isNotEmpty()) {
                 Text(
                     text = viewModel.errorMessage,
@@ -226,7 +228,7 @@ fun FormularioTarjetaScreen(
                     )
                 } else {
                     Text(
-                        text = "Vincular Tarjeta",
+                        text = stringResource(Res.string.wallet_link_card_button),
                         style = typography.bodyLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = windowSize.adaptiveSp(16)
@@ -240,7 +242,7 @@ fun FormularioTarjetaScreen(
 }
 
 // ==============================================================================
-// UTILIDADES: Transformaciones visuales para aplicar las máscaras en tiempo real
+// UTILIDADES
 // ==============================================================================
 
 class CardNumberVisualTransformation : VisualTransformation {

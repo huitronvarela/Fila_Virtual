@@ -25,6 +25,10 @@ import com.example.fila_virtual.core.LocalWindowSize
 import com.example.fila_virtual.core.theme.*
 import androidx.compose.runtime.saveable.rememberSaveable
 
+// IMPORTS PARA LOS RECURSOS DE TRADUCCIÓN
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.* // <-- Asegúrate de que este sea tu import de Res
+
 // Colores de marca
 private val MPBlue = Color(0xFF009EE3)
 private val LightBlueBg = Color(0xFFE1F5FE)
@@ -68,7 +72,7 @@ fun BilleteraScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Métodos de Pago",
+                    text = stringResource(Res.string.wallet_payment_methods_title),
                     style = typography.titleLarge.copy(
                         fontSize = windowSize.adaptiveSp(20),
                         fontWeight = FontWeight.Bold
@@ -97,7 +101,7 @@ fun BilleteraScreen(
                 if (metodosPago.isEmpty()) {
                     item {
                         Text(
-                            text = "No tienes tarjetas vinculadas",
+                            text = stringResource(Res.string.wallet_no_linked_cards),
                             style = typography.bodyMedium.copy(
                                 fontSize = windowSize.adaptiveSp(14)
                             ),
@@ -112,7 +116,7 @@ fun BilleteraScreen(
                     LinkedMethodView(
                         icon = Icons.Default.AccountBalanceWallet,
                         title = "Mercado Pago",
-                        status = "Cuenta vinculada"
+                        status = stringResource(Res.string.wallet_linked_account)
                     )
                     Spacer(Modifier.height(40.dp))
                 }
@@ -140,7 +144,7 @@ fun BilleteraScreen(
                             Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = Color.White)
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "Añadir nuevo método de pago",
+                                text = stringResource(Res.string.wallet_add_new_method),
                                 style = typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = windowSize.adaptiveSp(16)
@@ -184,10 +188,6 @@ fun BilleteraScreen(
     }
 }
 
-// ==============================================================================
-// COMPONENTE: Tarjeta de crédito visual con degradado naranja
-// ==============================================================================
-
 @Composable
 fun CreditCardView(cardNumber: String, cardHolder: String, expiryDate: String, cardBrand: String) {
     Card(
@@ -207,7 +207,6 @@ fun CreditCardView(cardNumber: String, cardHolder: String, expiryDate: String, c
                 modifier = Modifier.fillMaxSize().padding(24.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Fila superior: Chip y Marca
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -228,7 +227,6 @@ fun CreditCardView(cardNumber: String, cardHolder: String, expiryDate: String, c
                     )
                 }
 
-                // Número enmascarado
                 Text(
                     text = "••••  ••••  ••••  $cardNumber",
                     color = Color.White,
@@ -237,7 +235,6 @@ fun CreditCardView(cardNumber: String, cardHolder: String, expiryDate: String, c
                     letterSpacing = 3.sp
                 )
 
-                // Fila inferior: Titular y expiración
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -278,10 +275,6 @@ fun CreditCardView(cardNumber: String, cardHolder: String, expiryDate: String, c
         }
     }
 }
-
-// ==============================================================================
-// COMPONENTE: Card azul de Mercado Pago vinculado
-// ==============================================================================
 
 @Composable
 fun LinkedMethodView(icon: ImageVector, title: String, status: String) {
@@ -330,10 +323,6 @@ fun LinkedMethodView(icon: ImageVector, title: String, status: String) {
     }
 }
 
-// ==============================================================================
-// COMPONENTE: Contenido del Bottom Sheet para elegir método de pago
-// ==============================================================================
-
 @Composable
 fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
     val windowSize = LocalWindowSize.current
@@ -347,7 +336,7 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "¿Cómo quieres pagar?",
+            text = stringResource(Res.string.wallet_how_to_pay),
             style = typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = windowSize.adaptiveSp(20)
@@ -356,7 +345,6 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
             color = colorScheme.onSurface
         )
 
-        // Opción Mercado Pago
         Card(
             modifier = Modifier.fillMaxWidth().clickable { onConnectMP() },
             colors = CardDefaults.cardColors(containerColor = LightBlueBg),
@@ -383,7 +371,7 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
                         color = MPBlue
                     )
                     Text(
-                        text = "Dinero en cuenta y cuotas",
+                        text = stringResource(Res.string.wallet_mp_subtitle),
                         style = typography.bodySmall.copy(
                             fontSize = windowSize.adaptiveSp(12)
                         ),
@@ -395,7 +383,6 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Opción Nueva Tarjeta
         Card(
             modifier = Modifier.fillMaxWidth().clickable { onAddCard() },
             colors = CardDefaults.cardColors(containerColor = colorScheme.background),
@@ -413,7 +400,7 @@ fun AddMPMethodContent(onAddCard: () -> Unit, onConnectMP: () -> Unit) {
                 }
                 Spacer(Modifier.width(16.dp))
                 Text(
-                    text = "Nueva Tarjeta",
+                    text = stringResource(Res.string.wallet_new_card),
                     style = typography.bodyLarge.copy(
                         fontWeight = FontWeight.Medium,
                         fontSize = windowSize.adaptiveSp(16)

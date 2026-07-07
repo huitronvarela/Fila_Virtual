@@ -66,4 +66,25 @@
     <string name="wallet_add_money">Recargar Dinero</string>
     <string name="wallet_recent_transactions">Transacciones recientes</string>
     <string name="wallet_no_movements">No hay movimientos recientes</string>
+
+    <string name="wallet_payment_methods_title">Métodos de Pago</string>
+    <string name="wallet_no_linked_cards">No tienes tarjetas vinculadas</string>
+    <string name="wallet_linked_account">Cuenta vinculada</string>
+    <string name="wallet_add_new_method">Añadir nuevo método de pago</string>
+
+    <string name="wallet_how_to_pay">¿Cómo quieres pagar?</string>
+    <string name="wallet_mp_subtitle">Dinero en cuenta y cuotas</string>
+    <string name="wallet_new_card">Nueva Tarjeta</string>
+
+    <string name="wallet_enter_card_title">Ingresa tu tarjeta</string>
+    <string name="wallet_card_number">Número de la tarjeta</string>
+    <string name="wallet_card_name">Nombre como aparece en la tarjeta</string>
+    <string name="wallet_card_expiry">Vencimiento</string>
+    <string name="wallet_card_expiry_placeholder">MMAA</string>
+    <string name="wallet_card_cvv">CVV</string>
+    <string name="wallet_link_card_button">Vincular Tarjeta</string>
+
+    <string name="wallet_success_title">¡Tarjeta vinculada!</string>
+    <string name="wallet_success_desc">Tu método de pago se ha guardado correctamente y está listo para usarse en AlToque.</string>
+    <string name="wallet_accept_button">Aceptar</string>
 </resources>

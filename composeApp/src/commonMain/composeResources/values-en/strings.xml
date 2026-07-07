@@ -66,4 +66,26 @@
     <string name="wallet_add_money">Add Money</string>
     <string name="wallet_recent_transactions">Recent transactions</string>
     <string name="wallet_no_movements">No recent movements</string>
+
+
+    <string name="wallet_payment_methods_title">Payment Methods</string>
+    <string name="wallet_no_linked_cards">You have no linked cards</string>
+    <string name="wallet_linked_account">Linked account</string>
+    <string name="wallet_add_new_method">Add new payment method</string>
+
+    <string name="wallet_how_to_pay">How do you want to pay?</string>
+    <string name="wallet_mp_subtitle">Account money and installments</string>
+    <string name="wallet_new_card">New Card</string>
+
+    <string name="wallet_enter_card_title">Enter your card</string>
+    <string name="wallet_card_number">Card number</string>
+    <string name="wallet_card_name">Name as it appears on the card</string>
+    <string name="wallet_card_expiry">Expiration</string>
+    <string name="wallet_card_expiry_placeholder">MMYY</string>
+    <string name="wallet_card_cvv">CVV</string>
+    <string name="wallet_link_card_button">Link Card</string>
+
+    <string name="wallet_success_title">Card linked!</string>
+    <string name="wallet_success_desc">Your payment method has been successfully saved and is ready to be used in AlToque.</string>
+    <string name="wallet_accept_button">Accept</string>
 </resources>

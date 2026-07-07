@@ -24,6 +24,7 @@ import com.example.fila_virtual.features.user.UserViewModel
 
 import com.example.fila_virtual.core.theme.*
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserMenuScreen(

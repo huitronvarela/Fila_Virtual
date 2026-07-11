@@ -13,6 +13,10 @@ import com.example.fila_virtual.features.user.UserViewModel
 import com.example.fila_virtual.data.TarjetaGuardada
 import androidx.compose.ui.text.font.FontWeight
 
+// IMPORTS PARA LOS RECURSOS DE TRADUCCIÓN
+import org.jetbrains.compose.resources.stringResource
+import fila_virtual.composeapp.generated.resources.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
@@ -70,7 +74,7 @@ fun CartScreen(
             item { InfoBanner() }
             item {
                 Text(
-                    text = "Tu Pedido",
+                    text = stringResource(Res.string.cart_your_order),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = windowSize.adaptiveSp(18)
@@ -81,7 +85,7 @@ fun CartScreen(
 
                 if (cartItems.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("El carrito está vacío", color = MediumGray)
+                        Text(stringResource(Res.string.cart_empty), color = MediumGray)
                     }
                 } else {
                     CartItemsList(cartItems)

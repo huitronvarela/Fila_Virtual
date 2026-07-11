@@ -87,4 +87,25 @@
     <string name="wallet_success_title">¡Tarjeta vinculada!</string>
     <string name="wallet_success_desc">Tu método de pago se ha guardado correctamente y está listo para usarse en AlToque.</string>
     <string name="wallet_accept_button">Aceptar</string>
+
+
+    <string name="cart_ending_in">terminada en</string>
+    <string name="cart_expires">Expira</string>
+    <string name="cart_no_cards_message">No tienes tarjetas vinculadas. Agrega una desde la pestaña Billetera.</string>
+    <string name="cart_title">Carrito</string>
+    <string name="cart_info_title">Tu pedido generará un turno de atención</string>
+    <string name="cart_info_desc">Acércate al mostrador cuando tu turno aparezca en pantalla.</string>
+    <string name="cart_empty">El carrito está vacío</string>
+    <string name="cart_your_order">Tu Pedido</string>
+    <string name="cart_payment_method">Método de Pago</string>
+    <string name="cart_no_payment">Sin método de pago</string>
+    <string name="cart_tap_to_select">Toca para seleccionar o agregar</string>
+    <string name="cart_pay_button">Pagar y Generar Turno</string>
+    <string name="cart_select_payment">Selecciona método de pago</string>
+
+    <string name="general_edit">Editar</string>
+    <string name="general_summary">Resumen</string>
+    <string name="general_subtotal">Subtotal</string>
+    <string name="general_service_fee">Tarifa de servicio</string>
+    <string name="general_total">Total</string>
 </resources>

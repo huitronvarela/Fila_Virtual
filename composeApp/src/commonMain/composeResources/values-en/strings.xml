@@ -88,4 +88,27 @@
     <string name="wallet_success_title">Card linked!</string>
     <string name="wallet_success_desc">Your payment method has been successfully saved and is ready to be used in AlToque.</string>
     <string name="wallet_accept_button">Accept</string>
+
+
+    <string name="cart_ending_in">ending in</string>
+    <string name="cart_expires">Expires</string>
+    <string name="cart_no_cards_message">You have no linked cards. Add one from the Wallet tab.</string>
+
+    <string name="cart_title">Cart</string>
+    <string name="cart_info_title">Your order will generate a service ticket</string>
+    <string name="cart_info_desc">Approach the counter when your ticket appears on the screen.</string>
+    <string name="cart_empty">Your cart is empty</string>
+    <string name="cart_your_order">Your Order</string>
+    <string name="cart_payment_method">Payment Method</string>
+    <string name="cart_no_payment">No payment method</string>
+    <string name="cart_tap_to_select">Tap to select or add</string>
+    <string name="cart_pay_button">Pay and Generate Ticket</string>
+    <string name="cart_select_payment">Select payment method</string>
+
+
+    <string name="general_edit">Edit</string>
+    <string name="general_summary">Summary</string>
+    <string name="general_subtotal">Subtotal</string>
+    <string name="general_service_fee">Service fee</string>
+    <string name="general_total">Total</string>
 </resources>

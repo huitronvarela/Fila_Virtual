@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.fila_virtual.core.ErrorMessages // <-- Import agregado para solucionar los errores
+import com.example.fila_virtual.core.ErrorMessages // <-- ESTE IMPORT ARREGLA EL PRIMER ERROR
 import com.example.fila_virtual.data.Pedido
 import com.example.fila_virtual.data.ProductoCarrito
 import com.example.fila_virtual.data.TarjetaGuardada
@@ -130,7 +130,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
     }
 
     fun procesarPagoSeguro() {
-        // 1. Validaciones Locales (UX - Prevención de errores)
         if (numeroTarjeta.length < 16) {
             errorMessage = ErrorMessages.INVALID_CARD_NUMBER
             return
@@ -152,7 +151,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
             return
         }
 
-        // Si pasa todas las validaciones, procedemos
         isLoading = true
         errorMessage = ""
 
@@ -164,6 +162,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 }
 
+                // <-- ESTO ARREGLA EL SEGUNDO ERROR (La variable response existe de nuevo)
                 val response: HttpResponse = client.post("https://api.mercadopago.com/v1/card_tokens?public_key=$MERCADO_PAGO_PUBLIC_KEY") {
                     contentType(ContentType.Application.Json)
                     setBody(buildJsonObject {
@@ -172,7 +171,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                         put("expiration_year", anio.toInt())
                         put("security_code", cvv)
                         put("cardholder", buildJsonObject {
-                            put("name", nombreTitular.ifEmpty { "ALTOQUE USER" }) // Por si lo dejan vacío
+                            put("name", nombreTitular.ifEmpty { "ALTOQUE USER" })
                         })
                     })
                 }
@@ -189,7 +188,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
 
                         val nuevaTarjeta = TarjetaGuardada(
                             ultimos4 = ultimos4,
-                            marca = "VISA", // Idealmente esto se detecta dinámicamente con el BIN de la tarjeta, pero para la beta de AlToque está bien.
+                            marca = "VISA",
                             nombreTitular = nombreTitular,
                             expiracion = expiracionFormateada,
                             tokenId = tokenId
@@ -200,7 +199,7 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
 
                         if (yaExiste) {
                             isLoading = false
-                            errorMessage = ErrorMessages.DUPLICATE_CARD // Necesitas agregar esta constante si no lo hiciste en el paso anterior
+                            errorMessage = ErrorMessages.DUPLICATE_CARD
                             return@launch
                         }
 
@@ -216,7 +215,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                             )
                         }
 
-                        // Guardamos en la base de datos NoSQL
                         Firebase.firestore.collection("usuarios").document(userId)
                             .update(
                                 "metodosPago" to metodosComoMapa,
@@ -225,7 +223,6 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                             )
 
                         isLoading = false
-                        // Este mensaje es la clave (trigger) para que tu pantalla muestre la palomita verde
                         errorMessage = "¡Tarjeta vinculada correctamente!"
 
                         numeroTarjeta = ""
@@ -272,11 +269,11 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     return@launch
                 }
 
-                // Restauramos la lógica de Ktor para el cobro
                 val client = HttpClient {
                     install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 }
 
+                // <-- AQUÍ TAMBIÉN ESTÁ LA VARIABLE RESPONSE
                 val response: HttpResponse = client.post("https://api.mercadopago.com/v1/payments") {
                     header(HttpHeaders.Authorization, "Bearer $MERCADO_PAGO_ACCESS_TOKEN")
                     contentType(ContentType.Application.Json)
@@ -369,14 +366,14 @@ class UserViewModel(private val repository: UserRepository = UserRepository()) :
                     return@launch
                 }
 
-                // 1. SIMULAMOS EL TIEMPO DE PAGO (1.5 segundos)
+                // 1. SIMULAMOS EL TIEMPO DE PAGO
                 kotlinx.coroutines.delay(1500)
 
                 // 2. Extraemos los datos reales del carrito
                 val descripcionReal = _carrito.value.joinToString(", ") { "${it.cantidad}x ${it.nombre}" }
                 val montoTotalReal = calcularTotalCarrito()
 
-                // 3. Preparamos los datos para la base de datos NoSQL
+                // 3. Preparamos los datos para Firebase NoSQL
                 val turnoGenerado = (1..99).random()
                 val now = dev.gitlive.firebase.firestore.Timestamp.now().seconds * 1000
 

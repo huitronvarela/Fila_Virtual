@@ -31,12 +31,14 @@ fun ClienteMainScreen(
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(pageCount = { 4 })
 
+    // 👇 ESCUCHAMOS EL CARRITO DESDE EL CEREBRO PRINCIPAL
+    val carritoActual by viewModel.carrito.collectAsState(initial = emptyList())
+
     // ESTADOS PARA NAVEGACIÓN
     var isEditingProfile by remember { mutableStateOf(false) }
     var showCart by remember { mutableStateOf(false) }
     var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
 
-    // Prioridad de navegación: Edición > Carrito > Pantalla Principal
     if (isEditingProfile) {
         EditProfileScreen(
             usuario = usuario,
@@ -49,16 +51,15 @@ fun ClienteMainScreen(
             onBackClick = { showCart = false },
             onOrderSuccess = {
                 showCart = false
-                scope.launch { pagerState.animateScrollToPage(1) } // Mueve a "Órdenes"
+                scope.launch { pagerState.animateScrollToPage(1) }
             }
         )
     } else if (selectedEstablecimiento != null) {
-        // --- CONEXIÓN REAL DEL MENÚ ---
         UserMenuScreen(
             establecimientoId = selectedEstablecimiento!!.id,
             nombreEstablecimiento = selectedEstablecimiento!!.nombre,
             onBack = { selectedEstablecimiento = null },
-            userViewModel = viewModel // <--- ¡AQUÍ ESTÁ LA CONEXIÓN MÁGICA!
+            userViewModel = viewModel
         )
     } else {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -92,12 +93,18 @@ fun ClienteMainScreen(
                         when (page) {
                             0 -> HomeView(
                                 usuario = usuario,
+                                cartCount = carritoActual.size, // 👇 Pasamos la cantidad
                                 onCartClick = { showCart = true },
-                                onEstablecimientoClick = { local ->
-                                    selectedEstablecimiento = local
-                                }
+                                onEstablecimientoClick = { local -> selectedEstablecimiento = local },
+                                onAddToCart = { producto ->
+                                    viewModel.agregarAlCarrito(
+                                        producto.id,       // Pasa el ID como String
+                                        producto.nombre,   // Pasa el nombre
+                                        producto.precio    // Pasa el precio
+                                    )
+                                } // 👇 Disparamos al VM principal
                             )
-                            1 -> OrdenesScreen() // Pasamos el VM aquí también por si lo necesita
+                            1 -> OrdenesScreen()
                             2 -> BilleteraScreen(viewModel)
                             3 -> ProfileComponent(
                                 usuario = usuario,

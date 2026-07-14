@@ -22,10 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.data.Establecimiento
-import com.example.fila_virtual.data.Producto // 👇 IMPORTACIÓN NUEVA PARA TUS PLATILLOS
+import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.user.UserHomeViewModel
 
-// Importamos tus componentes reutilizables y utilidades
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.components.SearchBar
 import com.example.fila_virtual.core.LocalWindowSize
@@ -34,8 +33,10 @@ import com.example.fila_virtual.core.theme.*
 @Composable
 fun HomeView(
     usuario: Usuario?,
+    cartCount: Int,
     onCartClick: () -> Unit,
-    onEstablecimientoClick: (Establecimiento) -> Unit
+    onEstablecimientoClick: (Establecimiento) -> Unit,
+    onAddToCart: (Producto) -> Unit
 ) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24).value.dp
@@ -44,9 +45,11 @@ fun HomeView(
     val categoriasDisponibles by viewModel.categoriasDisponibles.collectAsState()
     val categoriaSeleccionada by viewModel.categoriaSeleccionada.collectAsState()
     val establecimientos by viewModel.establecimientosFiltrados.collectAsState()
-
-    // 👇 ESCUCHAMOS LAS RECOMENDACIONES GLOBALES DESDE FIREBASE
     val listaRecomendaciones by viewModel.recomendaciones.collectAsState()
+
+    // 👇 ESCUCHAMOS EL TEXTO Y LOS RESULTADOS DEL BUSCADOR DESDE EL VIEWMODEL
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val resultadosBusqueda by viewModel.resultadosBusqueda.collectAsState()
 
     Column(
         modifier = Modifier
@@ -55,14 +58,14 @@ fun HomeView(
     ) {
         // --- SECCIÓN FIJA ---
         Spacer(modifier = Modifier.height(16.dp))
-        HomeHeader(padding = horizontalPadding, onCartClick = onCartClick)
+        HomeHeader(padding = horizontalPadding, cartCount = cartCount, onCartClick = onCartClick)
         Spacer(modifier = Modifier.height(16.dp))
 
-        var searchQuery by remember { mutableStateOf("") }
         Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
             SearchBar(
                 query = searchQuery,
-                onQueryChange = { searchQuery = it }
+                // 👇 AVISAMOS AL VIEWMODEL CADA VEZ QUE EL USUARIO ESCRIBE UNA LETRA
+                onQueryChange = { viewModel.actualizarBusqueda(it) }
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -73,30 +76,51 @@ fun HomeView(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            SectionHeader(title = "Categorías", actionText = null, padding = horizontalPadding)
-            Spacer(modifier = Modifier.height(16.dp))
-            CategoryRow(
-                categorias = categoriasDisponibles,
-                seleccion = categoriaSeleccionada,
-                onSelect = { viewModel.seleccionarCategoria(it) },
-                padding = horizontalPadding
-            )
 
-            Spacer(modifier = Modifier.height(32.dp))
-            SectionHeader(title = "Cafeterías Cercanas", actionText = "Ver todas", padding = horizontalPadding)
-            Spacer(modifier = Modifier.height(16.dp))
-            CafeteriasList(
-                establecimientos = establecimientos,
-                padding = horizontalPadding,
-                onEstablecimientoClick = onEstablecimientoClick
-            )
+            // 👇 IF MÁGICO DE COMPOSE: CONDICIONAMOS LA PANTALLA
+            if (searchQuery.isNotBlank()) {
 
-            Spacer(modifier = Modifier.height(32.dp))
-            SectionHeader(title = "Recomendaciones para ti", actionText = null, padding = horizontalPadding)
-            Spacer(modifier = Modifier.height(16.dp))
+                // SI HAY TEXTO, SOLO MOSTRAMOS ESTO:
+                Spacer(modifier = Modifier.height(16.dp))
+                SectionHeader(title = "Resultados de búsqueda", actionText = null, padding = horizontalPadding)
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // 👇 PASAMOS LA LISTA REAL A TU COMPONENTE VISUAL
-            RecommendationsList(productosConLocal = listaRecomendaciones, padding = horizontalPadding)
+                RecommendationsList(
+                    productosConLocal = resultadosBusqueda,
+                    padding = horizontalPadding,
+                    onAddToCart = onAddToCart
+                )
+
+            } else {
+
+                // SI ESTÁ VACÍO, MOSTRAMOS LA PANTALLA DE INICIO NORMAL:
+                SectionHeader(title = "Categorías", actionText = null, padding = horizontalPadding)
+                Spacer(modifier = Modifier.height(16.dp))
+                CategoryRow(
+                    categorias = categoriasDisponibles,
+                    seleccion = categoriaSeleccionada,
+                    onSelect = { viewModel.seleccionarCategoria(it) },
+                    padding = horizontalPadding
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+                SectionHeader(title = "Cafeterías Populares", actionText = "Ver todas", padding = horizontalPadding)
+                Spacer(modifier = Modifier.height(16.dp))
+                CafeteriasList(
+                    establecimientos = establecimientos,
+                    padding = horizontalPadding,
+                    onEstablecimientoClick = onEstablecimientoClick
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+                SectionHeader(title = "Recomendaciones para ti", actionText = null, padding = horizontalPadding)
+                Spacer(modifier = Modifier.height(16.dp))
+                RecommendationsList(
+                    productosConLocal = listaRecomendaciones,
+                    padding = horizontalPadding,
+                    onAddToCart = onAddToCart
+                )
+            }
 
             Spacer(modifier = Modifier.height(100.dp))
         }
@@ -105,7 +129,7 @@ fun HomeView(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeHeader(padding: Dp, onCartClick: () -> Unit) {
+fun HomeHeader(padding: Dp, cartCount: Int, onCartClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -114,16 +138,25 @@ fun HomeHeader(padding: Dp, onCartClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Hola, Bienvenido 👋",
-            style = MaterialTheme.typography.titleLarge
+            text = "AlToque te da la Bienvenida",
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 16.dp),
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
 
         BadgedBox(
             badge = {
-                Badge(
-                    containerColor = PrimaryOrange,
-                    contentColor = Color.White
-                ) { Text("3") }
+                if (cartCount > 0) {
+                    Badge(
+                        containerColor = PrimaryOrange,
+                        contentColor = Color.White
+                    ) { Text(cartCount.toString()) }
+                }
             }
         ) {
             Surface(
@@ -305,28 +338,38 @@ fun CafeteriaCard(establecimiento: Establecimiento, onClick: () -> Unit) {
     }
 }
 
-// 👇 LISTA DINÁMICA DE RECOMENDACIONES
 @Composable
-fun RecommendationsList(productosConLocal: List<Pair<Producto, String>>, padding: Dp) {
+fun RecommendationsList(
+    productosConLocal: List<Pair<Producto, String>>,
+    padding: Dp,
+    onAddToCart: (Producto) -> Unit
+) {
     Column(modifier = Modifier.padding(horizontal = padding)) {
         if (productosConLocal.isEmpty()) {
             Text(
-                text = "Buscando las mejores recomendaciones...",
+                text = "No se encontraron resultados...",
                 color = Color.Gray,
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
             productosConLocal.forEach { (producto, nombreLocal) ->
-                RecommendationCard(producto = producto, storeName = nombreLocal)
+                RecommendationCard(
+                    producto = producto,
+                    storeName = nombreLocal,
+                    onAddToCartClick = { onAddToCart(producto) }
+                )
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
 }
 
-// 👇 TARJETA REAL ENLAZADA A FIREBASE
 @Composable
-fun RecommendationCard(producto: Producto, storeName: String) {
+fun RecommendationCard(
+    producto: Producto,
+    storeName: String,
+    onAddToCartClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -353,7 +396,14 @@ fun RecommendationCard(producto: Producto, storeName: String) {
                     Text(text = storeName, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                     Text(text = "$${producto.precio}", color = PrimaryOrange, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                 }
-                Surface(modifier = Modifier.size(32.dp), shape = CircleShape, color = PrimaryOrange) {
+
+                Surface(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clickable { onAddToCartClick() },
+                    shape = CircleShape,
+                    color = PrimaryOrange
+                ) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.padding(6.dp))
                 }
             }

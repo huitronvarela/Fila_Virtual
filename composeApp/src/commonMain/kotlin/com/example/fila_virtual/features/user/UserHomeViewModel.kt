@@ -9,6 +9,7 @@ import com.example.fila_virtual.repository.ProductoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 class UserHomeViewModel : ViewModel() {
 
     private val establecimientoRepo = EstablecimientoRepository()
-    private val productoRepo = ProductoRepository() // 👇 Conectamos los productos
+    private val productoRepo = ProductoRepository()
 
     // 1. Traer TODOS los establecimientos en tiempo real desde Firestore
     private val _todosLosEstablecimientos = establecimientoRepo.getEstablecimientos()
@@ -56,7 +57,7 @@ class UserHomeViewModel : ViewModel() {
         initialValue = emptyList()
     )
 
-    // 👇 5. ESTA ES LA VARIABLE QUE FALTABA PARA EL TOP 5
+    // 5. Variable para el TOP 5
     val recomendaciones: StateFlow<List<Pair<Producto, String>>> = combine(
         _todosLosEstablecimientos,
         productoRepo.getProductosGlobales()
@@ -74,4 +75,38 @@ class UserHomeViewModel : ViewModel() {
     fun seleccionarCategoria(categoria: String) {
         _categoriaSeleccionada.value = categoria
     }
+
+    // --- 👇 LÓGICA DEL BUSCADOR INTEGRADA 👇 ---
+
+    // Estado que guarda lo que el usuario escribe en tiempo real
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // Función para actualizar el texto desde la interfaz
+    fun actualizarBusqueda(query: String) {
+        _searchQuery.value = query
+    }
+
+    // Lista dinámica que solo busca cuando hay texto escrito
+    val resultadosBusqueda: StateFlow<List<Pair<Producto, String>>> = combine(
+        _searchQuery,
+        _todosLosEstablecimientos,
+        productoRepo.getProductosGlobales()
+    ) { query, locales, productos ->
+        if (query.isBlank()) {
+            emptyList() // Si no ha escrito nada, mandamos una lista vacía
+        } else {
+            // Filtramos los productos que contengan las letras escritas (ignorando mayúsculas)
+            productos.filter {
+                it.disponible && it.nombre.contains(query, ignoreCase = true)
+            }.map { producto ->
+                val nombreLocal = locales.find { it.id == producto.establecimientoId }?.nombre ?: "Local"
+                Pair(producto, nombreLocal)
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 }

@@ -44,7 +44,7 @@ class EmpleadoViewModel : ViewModel() {
                 val empleadosDetalle = listaEmpleados.map { empleado ->
                     async {
                         try {
-                            val userDoc = db.collection("users").document(empleado.uid).get()
+                            val userDoc = db.collection("usuarios").document(empleado.uid).get()
                             val usuario = userDoc.data<Usuario>()
 
                             EmpleadoDetalle(
@@ -86,7 +86,7 @@ class EmpleadoViewModel : ViewModel() {
             _uiState.value = FormState.Loading
 
             try {
-                val userQuery = db.collection("users")
+                val userQuery = db.collection("usuarios")
                     .where("email", equalTo = correoBusqueda.trim())
                     .get()
 
@@ -95,10 +95,13 @@ class EmpleadoViewModel : ViewModel() {
                     return@launch
                 }
 
-                val usuarioEncontrado = userQuery.documents.first().data<Usuario>()
+                val firstDoc = userQuery.documents.first()
+                val usuarioEncontrado = firstDoc.data<Usuario>()
+                
+                val uidFinal = usuarioEncontrado.uid.ifEmpty { firstDoc.id }
 
                 val nuevoEmpleado = Empleado(
-                    uid = usuarioEncontrado.uid,
+                    uid = uidFinal,
                     rol = rol,
                     activo = true
                 )
@@ -116,6 +119,55 @@ class EmpleadoViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 _uiState.value = FormState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun cargarTodosLosEmpleados(establecimientoIds: List<String>) {
+        viewModelScope.launch {
+            _uiState.value = FormState.Loading
+            val todosList = mutableListOf<EmpleadoDetalle>()
+
+            for (estId in establecimientoIds) {
+                val result = repository.obtenerEmpleados(estId)
+                if (result.isSuccess) {
+                    val detalles = result.getOrDefault(emptyList()).map { empleado ->
+                        async {
+                            try {
+                                val userDoc = db.collection("usuarios").document(empleado.uid).get()
+                                val usuario = userDoc.data<Usuario>()
+                                EmpleadoDetalle(
+                                    uid = empleado.uid,
+                                    nombre = usuario.nombre.ifEmpty { "Usuario sin nombre" },
+                                    correo = usuario.email,
+                                    rol = empleado.rol,
+                                    activo = empleado.activo,
+                                    joinedAt = empleado.joinedAt
+                                )
+                            } catch (e: Exception) {
+                                EmpleadoDetalle(uid = empleado.uid, nombre = "Usuario Desconocido", rol = empleado.rol, activo = empleado.activo)
+                            }
+                        }
+                    }.awaitAll()
+                    todosList.addAll(detalles)
+                }
+            }
+
+            // Remove duplicates by uid (employee in multiple establishments)
+            _empleados.value = todosList.distinctBy { it.uid }
+            _uiState.value = FormState.Idle
+        }
+    }
+
+    fun eliminarEmpleado(establecimientoId: String, uid: String) {
+        viewModelScope.launch {
+            _uiState.value = FormState.Loading
+            val result = repository.eliminarEmpleado(establecimientoId, uid)
+            if (result.isSuccess) {
+                _uiState.value = FormState.Success
+                cargarEmpleados(establecimientoId)
+            } else {
+                _uiState.value = FormState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar")
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.example.fila_virtual.features.admin.inicio
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +27,7 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EstablecimientosScreen(
     currentAdminUid: String,
@@ -39,6 +41,11 @@ fun EstablecimientosScreen(
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24).value.dp
     var searchQuery by remember { mutableStateOf("") }
+    
+    var selectedEstablecimiento by remember { mutableStateOf<Establecimiento?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(currentAdminUid) {
         viewModel.setOwnerUid(currentAdminUid)
     }
@@ -141,13 +148,252 @@ fun EstablecimientosScreen(
                     items(listaFiltrada) { local ->
                         EstablecimientoCard(
                             establecimiento = local,
-                            onClick = { onSelectEstablecimiento(local.id) },
-                            onToggleActive = { viewModel.actualizarEstado(local.id, it) },
-                            onEditClick = { onEditEstablecimiento(local) }
+                            onClick = { selectedEstablecimiento = local }
                         )
                     }
                 }
             }
+        }
+    }
+
+    if (selectedEstablecimiento != null) {
+        val est = selectedEstablecimiento!!
+        ModalBottomSheet(
+            onDismissRequest = { selectedEstablecimiento = null },
+            sheetState = sheetState,
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Top part: Image and Title
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(BorderGray)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Storefront,
+                            contentDescription = null,
+                            tint = MediumGray,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .align(Alignment.Center)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = est.nombre.ifEmpty { "Sin Nombre" },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkGray
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = MediumGray, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = est.ubicacion.direccion.ifEmpty { "Sin dirección" },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MediumGray,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Estado del Local Card
+                Surface(
+                    color = ExtraLightGray,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Estado del Local",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = DarkGray
+                            )
+                            Text(
+                                text = "Visibilidad en la app para clientes",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MediumGray
+                            )
+                        }
+                        
+                        Text(
+                            text = if (est.activo) "ABIERTO" else "CERRADO",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (est.activo) PrimaryOrange else MediumGray
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(
+                            checked = est.activo,
+                            onCheckedChange = { disp -> 
+                                viewModel.actualizarEstado(est.id, disp)
+                                selectedEstablecimiento = est.copy(activo = disp)
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = PrimaryOrange,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = MediumGray,
+                                uncheckedBorderColor = Color.Transparent
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Two small cards
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Surface(
+                        color = ExtraLightGray,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Surface(
+                                shape = CircleShape,
+                                color = PrimaryOrange.copy(alpha = 0.15f),
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Default.Storefront, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.padding(6.dp))
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("CATEGORÍA", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text("Comida Rápida", style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Surface(
+                        color = ExtraLightGray,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Surface(
+                                shape = CircleShape,
+                                color = PrimaryOrange.copy(alpha = 0.15f),
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Outlined.Timer, contentDescription = null, tint = PrimaryOrange, modifier = Modifier.padding(6.dp))
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("HORARIO", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text("09:00 AM - 10:00 PM", style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Botones
+                OutlinedButton(
+                    onClick = { 
+                        selectedEstablecimiento = null
+                        onSelectEstablecimiento(est.id) 
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = DarkGray),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Administrar Establecimiento", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Button(
+                    onClick = { 
+                        selectedEstablecimiento = null
+                        onEditEstablecimiento(est) 
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Editar Establecimiento", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f))
+                ) {
+                    Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Eliminar Establecimiento", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        }
+        
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = {
+                    Text("Eliminar establecimiento", fontWeight = FontWeight.Bold)
+                },
+                text = {
+                    Text("¿Estás seguro de que deseas eliminar este establecimiento? Esta acción no se puede deshacer.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { 
+                            viewModel.eliminarEstablecimiento(est.id)
+                            showDeleteDialog = false
+                            selectedEstablecimiento = null
+                        }
+                    ) {
+                        Text("Eliminar", fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDeleteDialog = false }
+                    ) {
+                        Text("Cancelar", color = DarkGray)
+                    }
+                }
+            )
         }
     }
 }
@@ -155,13 +401,12 @@ fun EstablecimientosScreen(
 @Composable
 fun EstablecimientoCard(
     establecimiento: Establecimiento,
-    onClick: () -> Unit,
-    onToggleActive: (Boolean) -> Unit,
-    onEditClick: () -> Unit
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -258,33 +503,16 @@ fun EstablecimientoCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // 3. Acciones (Derecha) - Consistencia con Menu
+            // 3. Acciones (Derecha)
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier.height(80.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = "Editar",
-                    tint = PrimaryOrange,
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clickable { onEditClick() }
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Switch(
-                    checked = establecimiento.activo,
-                    onCheckedChange = onToggleActive,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = PrimaryOrange,
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = MediumGray,
-                        uncheckedBorderColor = Color.Transparent
-                    )
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Opciones",
+                    tint = MediumGray
                 )
             }
         }

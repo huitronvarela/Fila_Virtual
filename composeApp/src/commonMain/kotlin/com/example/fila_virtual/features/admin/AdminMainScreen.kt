@@ -59,6 +59,7 @@ fun AdminMainScreen(
         AnadirEmpleadoScreen(
             empleado = empleadoToEdit,
             establecimientoId = selectedEstablecimientoId,
+            ownerUid = usuario.uid,
             viewModel = viewModel(),
             onNavigateBack = {
                 isAddingEmployee = false
@@ -124,7 +125,8 @@ fun AdminMainScreen(
                     )
                     1 -> ScreenEmpleados(
                         establecimientoId = selectedEstablecimientoId,
-                        onNavigateToAdd = { 
+                        ownerUid = usuario.uid,
+                        onNavigateToAdd = {
                             isAddingEmployee = true
                         },
                         onEditEmpleado = { emp ->

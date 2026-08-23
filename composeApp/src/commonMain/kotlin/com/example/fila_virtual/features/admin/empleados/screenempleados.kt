@@ -1,5 +1,6 @@
 package com.example.fila_virtual.features.admin.empleados
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,43 +32,71 @@ import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.features.admin.FormState
 
+import com.example.fila_virtual.features.admin.EstablecimientoViewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenEmpleados(
     establecimientoId: String,
+    ownerUid: String,
     onNavigateToAdd: () -> Unit,
     onEditEmpleado: (EmpleadoDetalle) -> Unit,
-    viewModel: EmpleadoViewModel = viewModel()
+    viewModel: EmpleadoViewModel = viewModel(),
+    establecimientoViewModel: EstablecimientoViewModel = viewModel()
 ) {
     val windowSize = LocalWindowSize.current
     val horizontalPadding = windowSize.adaptiveDp(24)
 
     val uiState by viewModel.uiState.collectAsState()
     val empleados by viewModel.empleados.collectAsState()
-    var searchQuery by remember { mutableStateOf("") }
+    val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
 
-    // Cargar empleados al montar la pantalla
-    LaunchedEffect(establecimientoId) {
-        viewModel.cargarEmpleados(establecimientoId)
+    var searchQuery by remember { mutableStateOf("") }
+    
+    var currentEstablecimientoId by remember { mutableStateOf(if (establecimientoId.isEmpty()) "TODOS" else establecimientoId) }
+    var showSucursalSelector by remember { mutableStateOf(false) }
+
+    var selectedEmpleado by remember { mutableStateOf<EmpleadoDetalle?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Cargar establecimientos y empleados al montar la pantalla
+    LaunchedEffect(currentEstablecimientoId, ownerUid, establecimientos.size) {
+        establecimientoViewModel.setOwnerUid(ownerUid)
+        when {
+            currentEstablecimientoId == "TODOS" && establecimientos.isNotEmpty() -> {
+                viewModel.cargarTodosLosEmpleados(establecimientos.map { it.id })
+            }
+            currentEstablecimientoId != "TODOS" && currentEstablecimientoId.isNotEmpty() -> {
+                viewModel.cargarEmpleados(currentEstablecimientoId)
+            }
+        }
     }
 
     val listaFiltrada = empleados.filter {
         it.nombre.contains(searchQuery, ignoreCase = true) ||
                 it.rol.contains(searchQuery, ignoreCase = true) ||
                 it.correo.contains(searchQuery, ignoreCase = true)
+    }
 
+    val sucursalActual = when (currentEstablecimientoId) {
+        "TODOS" -> "Todos los Empleados"
+        "" -> "Seleccionar Sucursal"
+        else -> establecimientos.find { it.id == currentEstablecimientoId }?.nombre ?: "Sucursal desconocida"
     }
 
     Scaffold(
         containerColor = LightBackground,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAdd,
-                containerColor = PrimaryOrange,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Empleado")
+            if (currentEstablecimientoId != "TODOS" && currentEstablecimientoId.isNotEmpty()) {
+                FloatingActionButton(
+                    onClick = onNavigateToAdd,
+                    containerColor = PrimaryOrange,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Empleado")
+                }
             }
         }
     ) {
@@ -71,108 +105,363 @@ fun ScreenEmpleados(
                 .fillMaxSize()
                 .padding(horizontal = horizontalPadding)
         ) {
-            Text(
-                text = "Gestión de Empleados",
-                style = MaterialTheme.typography.titleLarge,
-                color = DarkGray,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 24.dp)
-            )
-
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
-                placeholder = "Buscar empleados...",
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Personal",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = "Gestión de Empleados",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = DarkGray,
                     fontWeight = FontWeight.Bold,
-                    color = DarkGray
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
                 )
-                Surface(
-                    color = BorderGray,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "${listaFiltrada.size} TOTAL",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkGray
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            when {
-                uiState is FormState.Loading && empleados.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                Box {
+                    Surface(
+                        color = Color.White,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.clickable { showSucursalSelector = true },
+                        border = BorderStroke(1.dp, ExtraLightGray)
                     ) {
-                        CircularProgressIndicator(color = PrimaryOrange)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.LocationOn,
+                                contentDescription = null,
+                                tint = PrimaryOrange,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = sucursalActual,
+                                color = PrimaryOrange,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = PrimaryOrange,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
-                }
 
-                uiState is FormState.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                    DropdownMenu(
+                        expanded = showSucursalSelector,
+                        onDismissRequest = { showSucursalSelector = false },
+                        modifier = Modifier.background(Color.White)
                     ) {
-                        Text(
-                            text = (uiState as FormState.Error).message,
-                            color = TrafficRed,
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 32.dp)
+                        // Opción "Todos"
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Filled.People,
+                                        contentDescription = null,
+                                        tint = PrimaryOrange,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Todos los Empleados", fontWeight = FontWeight.Bold, color = PrimaryOrange)
+                                }
+                            },
+                            onClick = {
+                                currentEstablecimientoId = "TODOS"
+                                showSucursalSelector = false
+                            }
                         )
-                    }
-                }
-
-                listaFiltrada.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (searchQuery.isEmpty())
-                                "No hay empleados registrados aún"
-                            else
-                                "No se encontraron resultados para \"$searchQuery\"",
-                            color = MediumGray,
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-                    }
-                }
-
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(bottom = 88.dp)
-                    ) {
-                        items(listaFiltrada, key = { it.uid }) { empleado ->
-                            CardEmpleado(
-                                empleado = empleado,
-                                onEdit = { onEditEmpleado(empleado) }
+                        HorizontalDivider()
+                        establecimientos.forEach { sucursal ->
+                            DropdownMenuItem(
+                                text = { Text(sucursal.nombre) },
+                                onClick = {
+                                    currentEstablecimientoId = sucursal.id
+                                    showSucursalSelector = false
+                                }
                             )
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            if (currentEstablecimientoId == "TODOS" || currentEstablecimientoId.isNotEmpty()) {
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    placeholder = "Buscar empleados...",
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Personal",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray
+                    )
+                    Surface(
+                        color = BorderGray,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "${listaFiltrada.size} TOTAL",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkGray
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when {
+                    uiState is FormState.Loading && empleados.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = PrimaryOrange)
+                        }
+                    }
+
+                    uiState is FormState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = (uiState as FormState.Error).message,
+                                color = TrafficRed,
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 32.dp)
+                            )
+                        }
+                    }
+
+                    listaFiltrada.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (searchQuery.isEmpty())
+                                    "No hay empleados registrados aún"
+                                else
+                                    "No se encontraron resultados para \"$searchQuery\"",
+                                color = MediumGray,
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 32.dp)
+                            )
+                        }
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 88.dp)
+                        ) {
+                            items(listaFiltrada, key = { it.uid }) { empleado ->
+                                CardEmpleado(
+                                    empleado = empleado,
+                                    onClick = { selectedEmpleado = empleado }
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Selecciona una sucursal para ver los empleados",
+                        color = MediumGray,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                }
+            }
+        }
+        
+        // Modal de Opciones
+        if (selectedEmpleado != null) {
+            val emp = selectedEmpleado!!
+            ModalBottomSheet(
+                onDismissRequest = { selectedEmpleado = null },
+                sheetState = sheetState,
+                containerColor = Color.White
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Profile avatar
+                    Box(modifier = Modifier.size(100.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(LightGray),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = MediumGray, modifier = Modifier.size(50.dp))
+                        }
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(4.dp)
+                                .size(20.dp)
+                                .background(if (emp.activo) TrafficGreen else MediumGray, CircleShape)
+                                .border(3.dp, Color.White, CircleShape)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = emp.nombre,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray
+                    )
+                    Text(
+                        text = emp.rol.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MediumGray
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Surface(
+                        color = if (emp.activo) Color(0xFFE8F5E9) else ExtraLightGray,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(if (emp.activo) TrafficGreen else MediumGray, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (emp.activo) "ACTIVO" else "INACTIVO",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (emp.activo) TrafficGreen else MediumGray
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    val dateStr = if (emp.joinedAt > 0) "Registrado" else "N/A"
+                    
+                    // Mail card
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(shape = RoundedCornerShape(12.dp), color = ExtraLightGray, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Outlined.Email, contentDescription = null, tint = DarkGray, modifier = Modifier.padding(12.dp))
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text("CORREO ELECTRÓNICO", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(emp.correo, style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                    
+                    // Date & Shift
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(shape = RoundedCornerShape(12.dp), color = ExtraLightGray, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Outlined.DateRange, contentDescription = null, tint = DarkGray, modifier = Modifier.padding(12.dp))
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("CONTRATACIÓN", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text(dateStr, style = MaterialTheme.typography.bodyMedium, color = DarkGray, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Button(
+                        onClick = { 
+                            selectedEmpleado = null
+                            onEditEmpleado(emp) 
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Editar Perfil", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f))
+                    ) {
+                        Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Eliminar Empleado", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
+            
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("Eliminar Empleado", fontWeight = FontWeight.Bold) },
+                    text = { Text("¿Estás seguro de que deseas eliminar a este empleado del establecimiento?") },
+                    confirmButton = {
+                        TextButton(onClick = { 
+                            viewModel.eliminarEmpleado(currentEstablecimientoId, emp.uid)
+                            showDeleteDialog = false
+                            selectedEmpleado = null
+                        }) {
+                            Text("Eliminar", fontWeight = FontWeight.Bold, color = TrafficRed)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Cancelar", color = DarkGray)
+                        }
+                    }
+                )
             }
         }
     }
@@ -181,12 +470,12 @@ fun ScreenEmpleados(
 @Composable
 fun CardEmpleado(
     empleado: EmpleadoDetalle,
-    onEdit: () -> Unit
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEdit() },
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -205,14 +494,12 @@ fun CardEmpleado(
                         .background(LightGray),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Opcional: Si luego agregas la foto de la colección 'users', puedes usar AsyncImage aquí
                     Icon(
                         Icons.Default.Person,
                         contentDescription = null,
                         tint = MediumGray
                     )
                 }
-                // Punto de estado activo/inactivo
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -234,7 +521,6 @@ fun CardEmpleado(
                     fontWeight = FontWeight.Bold,
                     color = DarkGray
                 )
-                // 🚀 Añadí el correo aquí para que la UI se vea más completa
                 Text(
                     text = empleado.correo,
                     style = MaterialTheme.typography.labelSmall,
@@ -242,7 +528,7 @@ fun CardEmpleado(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = empleado.rol.uppercase(), // Un buen toque visual
+                    text = empleado.rol.uppercase(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PrimaryOrange,
                     fontWeight = FontWeight.Bold
@@ -263,12 +549,11 @@ fun CardEmpleado(
             }
 
             Icon(
-                Icons.Default.Edit,
-                contentDescription = "Editar",
-                tint = PrimaryOrange,
+                Icons.Default.MoreVert,
+                contentDescription = "Opciones",
+                tint = MediumGray,
                 modifier = Modifier
-                    .size(22.dp)
-                    .clickable { onEdit() }
+                    .size(24.dp)
             )
         }
     }

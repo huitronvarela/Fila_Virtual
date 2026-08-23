@@ -58,6 +58,19 @@ class EstablecimientoViewModel : ViewModel() {
         }
     }
 
+    fun eliminarEstablecimiento(id: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _uiState.value = FormState.Loading
+            val result = repository.eliminarEstablecimiento(id)
+            if (result.isSuccess) {
+                _uiState.value = FormState.Success
+                onSuccess()
+            } else {
+                _uiState.value = FormState.Error(result.exceptionOrNull()?.message ?: "Error desconocido al eliminar")
+            }
+        }
+    }
+
     fun resetState() {
         _uiState.value = FormState.Idle
     }

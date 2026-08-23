@@ -12,8 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +30,7 @@ import com.example.fila_virtual.data.Producto
 import com.example.fila_virtual.features.admin.ProductoViewModel
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenMenu(
     establecimientoId: String,
@@ -45,6 +46,10 @@ fun ScreenMenu(
     
     var currentEstablecimientoId by remember { mutableStateOf(establecimientoId) }
     var showSucursalSelector by remember { mutableStateOf(false) }
+
+    var selectedProducto by remember { mutableStateOf<Producto?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     // Sincronizar el establecimientoId con el ViewModel para cargar los productos reales
     LaunchedEffect(currentEstablecimientoId, ownerUid) {
@@ -220,14 +225,264 @@ fun ScreenMenu(
                         CardMenuItem(
                             producto = producto,
                             sucursalNombre = sucursalNombre,
-                            onEdit = { onNavigateToEdit(producto) },
-                            onToggleDisponibilidad = { disponible ->
-                                viewModel.actualizarDisponibilidad(producto.id, disponible)
-                            }
+                            onClick = { selectedProducto = producto }
                         )
                     }
                 }
             }
+        }
+    }
+
+    if (selectedProducto != null) {
+        val prod = selectedProducto!!
+        ModalBottomSheet(
+            onDismissRequest = { selectedProducto = null },
+            sheetState = sheetState,
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Top Image placeholder with badge
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(BorderGray)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fastfood,
+                        contentDescription = null,
+                        tint = MediumGray,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .align(Alignment.Center)
+                    )
+                    
+                    // Category badge
+                    Surface(
+                        color = Color(0xFF00ACC1),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = prod.categoria,
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Title & Price
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = prod.nombre,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkGray,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "$${prod.precio}",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFC62828)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Description
+                Text(
+                    text = prod.descripcion.ifEmpty { "Sin descripción disponible." },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MediumGray,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Activo en Menú Card
+                Surface(
+                    color = ExtraLightGray,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = PrimaryOrange.copy(alpha = 0.2f),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Visibility,
+                                contentDescription = null,
+                                tint = PrimaryOrange,
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .fillMaxSize()
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Activo en Menú",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = DarkGray
+                            )
+                            Text(
+                                text = "Visible para clientes",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MediumGray
+                            )
+                        }
+                        
+                        Switch(
+                            checked = prod.disponible,
+                            onCheckedChange = { disp -> 
+                                viewModel.actualizarDisponibilidad(prod.id, disp) 
+                                selectedProducto = prod.copy(disponible = disp)
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = PrimaryOrange,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = MediumGray,
+                                uncheckedBorderColor = Color.Transparent
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Two small cards
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Surface(
+                        color = ExtraLightGray,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Icon(Icons.Outlined.Timer, contentDescription = null, tint = DarkGray, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("PREP EST.", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text("10 - 15 min", style = MaterialTheme.typography.bodyLarge, color = DarkGray, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Surface(
+                        color = ExtraLightGray,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Icon(Icons.Outlined.ShoppingBag, contentDescription = null, tint = DarkGray, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("VENTAS HOY", style = MaterialTheme.typography.labelSmall, color = MediumGray, fontWeight = FontWeight.Bold)
+                            Text("24 órdenes", style = MaterialTheme.typography.bodyLarge, color = DarkGray, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Botón Editar
+                Button(
+                    onClick = { 
+                        selectedProducto = null
+                        onNavigateToEdit(prod) 
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Editar Platillo", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Botón Eliminar
+                OutlinedButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f))
+                ) {
+                    Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Eliminar Platillo", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        }
+        
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = {
+                    Text("Eliminar platillo", fontWeight = FontWeight.Bold)
+                },
+                text = {
+                    Text("¿Estás seguro de que deseas eliminar este platillo? Esta acción no se puede deshacer.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { 
+                            viewModel.eliminarProducto(prod.id)
+                            showDeleteDialog = false
+                            selectedProducto = null
+                        }
+                    ) {
+                        Text("Eliminar", fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDeleteDialog = false }
+                    ) {
+                        Text("Cancelar", color = DarkGray)
+                    }
+                }
+            )
         }
     }
 }
@@ -236,13 +491,12 @@ fun ScreenMenu(
 fun CardMenuItem(
     producto: Producto,
     sucursalNombre: String,
-    onEdit: () -> Unit = {},
-    onToggleDisponibilidad: (Boolean) -> Unit
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEdit() },
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -299,30 +553,13 @@ fun CardMenuItem(
             // Acciones (Derecha)
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier.height(80.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = "Editar",
-                    tint = PrimaryOrange,
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clickable { onEdit() }
-                )
-                
-                Spacer(modifier = Modifier.weight(1f))
-
-                Switch(
-                    checked = producto.disponible,
-                    onCheckedChange = onToggleDisponibilidad,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = PrimaryOrange,
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = MediumGray,
-                        uncheckedBorderColor = Color.Transparent
-                    )
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Opciones",
+                    tint = MediumGray
                 )
             }
         }

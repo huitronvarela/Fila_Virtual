@@ -1,5 +1,6 @@
 package com.example.fila_virtual.features.admin.empleados
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -28,19 +30,23 @@ import androidx.compose.ui.unit.dp
 import com.example.fila_virtual.components.BaseFormScreen
 import com.example.fila_virtual.components.InputField
 import com.example.fila_virtual.data.Empleado
+import com.example.fila_virtual.features.admin.EstablecimientoViewModel
 import com.example.fila_virtual.core.*
 import com.example.fila_virtual.core.theme.*
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.core.BackHandler
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AnadirEmpleadoScreen(
     empleado: EmpleadoDetalle? = null,
     establecimientoId: String,
+    ownerUid: String,
     viewModel: EmpleadoViewModel,
+    establecimientoViewModel: EstablecimientoViewModel = viewModel(),
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -49,6 +55,22 @@ fun AnadirEmpleadoScreen(
 
     var correo by remember { mutableStateOf(empleado?.correo ?: "") }
     var rol by remember { mutableStateOf(empleado?.rol ?: "cajero") }
+    var localError by remember { mutableStateOf("") }
+    
+    val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
+    
+    LaunchedEffect(ownerUid) {
+        establecimientoViewModel.setOwnerUid(ownerUid)
+    }
+
+    var selectedEstablecimientoId by remember { mutableStateOf(establecimientoId) }
+    var expandedEstablecimiento by remember { mutableStateOf(false) }
+
+    val sucursalActual = if (selectedEstablecimientoId.isEmpty()) {
+        "Seleccionar Sucursal"
+    } else {
+        establecimientos.find { it.id == selectedEstablecimientoId }?.nombre ?: "Sucursal desconocida"
+    }
 
     LaunchedEffect(uiState) {
         if (uiState is FormState.Success) {
@@ -63,11 +85,16 @@ fun AnadirEmpleadoScreen(
         //isLoading = uiState is FormState.Loading,
         saveButtonText = if (isEditing) "Guardar Cambios" else "Vincular Empleado",
         onSave = {
+            if (selectedEstablecimientoId.isEmpty()) {
+                localError = "Debes seleccionar una sucursal."
+                return@BaseFormScreen
+            }
+            localError = ""
             focusManager.clearFocus()
             viewModel.guardarEmpleadoPorCorreo(
                 correoBusqueda = correo,
                 rol = rol,
-                establecimientoId = establecimientoId,
+                establecimientoId = selectedEstablecimientoId,
                 onSuccess = onNavigateBack
             )
         }
@@ -107,6 +134,73 @@ fun AnadirEmpleadoScreen(
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
             //enabled = !isEditing
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Text(
+            text = "Sucursal",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = DarkGray
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Box {
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { if (!isEditing) expandedEstablecimiento = true },
+                border = BorderStroke(1.dp, ExtraLightGray)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.LocationOn,
+                        contentDescription = null,
+                        tint = PrimaryOrange,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = sucursalActual,
+                        color = if (selectedEstablecimientoId.isEmpty()) MediumGray else DarkGray,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (!isEditing) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MediumGray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            DropdownMenu(
+                expanded = expandedEstablecimiento,
+                onDismissRequest = { expandedEstablecimiento = false },
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .background(Color.White)
+            ) {
+                establecimientos.forEach { sucursal ->
+                    DropdownMenuItem(
+                        text = { Text(sucursal.nombre) },
+                        onClick = {
+                            selectedEstablecimientoId = sucursal.id
+                            expandedEstablecimiento = false
+                            localError = ""
+                        }
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
         Text(
@@ -153,10 +247,11 @@ fun AnadirEmpleadoScreen(
             )
         }
 
-        if (uiState is FormState.Error) {
+        if (localError.isNotEmpty() || uiState is FormState.Error) {
             Spacer(modifier = Modifier.height(16.dp))
+            val errorMessage = if (localError.isNotEmpty()) localError else (uiState as FormState.Error).message
             Text(
-                text = (uiState as FormState.Error).message,
+                text = errorMessage,
                 color = TrafficRed,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,

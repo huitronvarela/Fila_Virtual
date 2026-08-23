@@ -93,6 +93,19 @@ class ProductoViewModel : ViewModel() {
         }
     }
 
+    fun eliminarProducto(productoId: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _uiState.value = FormState.Loading
+            val result = repository.eliminarProducto(productoId)
+            if (result.isSuccess) {
+                _uiState.value = FormState.Success
+                onSuccess()
+            } else {
+                _uiState.value = FormState.Error(result.exceptionOrNull()?.message ?: "Error al eliminar el platillo")
+            }
+        }
+    }
+
     fun resetState() {
         _uiState.value = FormState.Idle
     }

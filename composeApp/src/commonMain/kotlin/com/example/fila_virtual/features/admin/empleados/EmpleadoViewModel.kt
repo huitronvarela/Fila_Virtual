@@ -3,9 +3,11 @@ package com.example.fila_virtual.features.admin.empleados
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fila_virtual.data.Empleado
+import com.example.fila_virtual.data.Establecimiento
 import com.example.fila_virtual.data.Usuario
 import com.example.fila_virtual.features.admin.FormState
 import com.example.fila_virtual.repository.EmpleadoRepository
+import com.example.fila_virtual.repository.EmployeeInvitationEmailTemplate
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.where
@@ -14,15 +16,36 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.serialization.Serializable
+import kotlin.random.Random
 
 data class EmpleadoDetalle(
     val uid: String = "",
     val nombre: String = "",
     val correo: String = "",
+    val fotoUrl: String = "",
     val rol: String = "",
     val activo: Boolean = true,
     val joinedAt: Long = 0L
 )
+
+@Serializable
+data class InvitacionEmpleado(
+    val token: String = "",
+    val correo: String = "",
+    val establecimientoId: String = "",
+    val rol: String = "",
+    val ownerUid: String = "",
+    val ownerNombre: String = "",
+    val establecimientoNombre: String = "",
+    val status: String = "pending",
+    val acceptedBy: String = "",
+    val acceptedAt: Long = 0L,
+    val createdAt: Long = 0L,
+    val expiresAt: Long = 0L
+)
+
 class EmpleadoViewModel : ViewModel() {
 
     private val repository = EmpleadoRepository()
@@ -33,6 +56,104 @@ class EmpleadoViewModel : ViewModel() {
 
     private val _empleados = MutableStateFlow<List<EmpleadoDetalle>>(emptyList())
     val empleados: StateFlow<List<EmpleadoDetalle>> = _empleados
+
+    fun enviarInvitacionPorCorreo(
+        correo: String,
+        rol: String,
+        establecimientoId: String,
+        onSent: (String) -> Unit
+    ) {
+        if (correo.isBlank()) {
+            _uiState.value = FormState.Error("Por favor ingresa un correo válido")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = FormState.Loading
+            try {
+                val email = correo.trim()
+                val userQuery = db.collection("usuarios")
+                    .where("email", equalTo = email)
+                    .get()
+
+                if (userQuery.documents.isEmpty()) {
+                    _uiState.value = FormState.Error("No existe ningún usuario registrado con este correo en la app.")
+                    return@launch
+                }
+
+                val userDocument = userQuery.documents.first()
+                val usuarioInvitado = userDocument.data<Usuario>()
+                val uidInvitado = usuarioInvitado.uid.ifEmpty { userDocument.id }
+                val establecimiento = db.collection("establecimientos")
+                    .document(establecimientoId)
+                    .get()
+                    .data<Establecimiento>()
+
+                if (establecimiento.ownerUid == uidInvitado) {
+                    _uiState.value = FormState.Error("No puedes invitar al dueño del establecimiento.")
+                    return@launch
+                }
+
+                val empleadoActual = db.collection("establecimientos")
+                    .document(establecimientoId)
+                    .collection("empleados")
+                    .document(uidInvitado)
+                    .get()
+
+                if (empleadoActual.exists) {
+                    _uiState.value = FormState.Error("Este usuario ya pertenece a este establecimiento.")
+                    return@launch
+                }
+
+                val establecimientosDelUsuario = db.collection("establecimientos")
+                    .where("ownerUid", equalTo = uidInvitado)
+                    .get()
+
+                if (establecimientosDelUsuario.documents.isNotEmpty()) {
+                    _uiState.value = FormState.Error("No puedes invitar a un usuario que ya es dueño de un establecimiento.")
+                    return@launch
+                }
+
+                val owner = db.collection("usuarios")
+                    .document(establecimiento.ownerUid)
+                    .get()
+                    .data<Usuario>()
+
+                val now = Clock.System.now().toEpochMilliseconds()
+                val token = Random.nextInt(100000, 1000000).toString()
+                val invitation = InvitacionEmpleado(
+                    token = token,
+                    correo = email,
+                    establecimientoId = establecimientoId,
+                    rol = rol,
+                    ownerUid = establecimiento.ownerUid,
+                    ownerNombre = owner.nombre.ifEmpty { owner.email },
+                    establecimientoNombre = establecimiento.nombre,
+                    createdAt = now,
+                    expiresAt = now + 24 * 60 * 60 * 1000L
+                )
+
+                db.collection("invitaciones_empleado")
+                    .document(token)
+                    .set(invitation)
+
+                db.collection("mail").add(
+                    EmployeeInvitationEmailTemplate.create(
+                        token = token,
+                        email = email,
+                        ownerNombre = owner.nombre.ifEmpty { owner.email },
+                        establecimientoNombre = establecimiento.nombre,
+                        rol = rol
+                    )
+                )
+
+                _uiState.value = FormState.Success
+                onSent(token)
+            } catch (e: Exception) {
+                _uiState.value = FormState.Error(e.message ?: "Error enviando la invitación")
+            }
+        }
+    }
 
     fun cargarEmpleados(establecimientoId: String) {
         viewModelScope.launch {
@@ -51,6 +172,7 @@ class EmpleadoViewModel : ViewModel() {
                                 uid = empleado.uid,
                                 nombre = usuario.nombre.ifEmpty { "Usuario sin nombre" },
                                 correo = usuario.email,
+                                fotoUrl = usuario.fotoUrl,
                                 rol = empleado.rol,
                                 activo = empleado.activo,
                                 joinedAt = empleado.joinedAt
@@ -140,6 +262,7 @@ class EmpleadoViewModel : ViewModel() {
                                     uid = empleado.uid,
                                     nombre = usuario.nombre.ifEmpty { "Usuario sin nombre" },
                                     correo = usuario.email,
+                                    fotoUrl = usuario.fotoUrl,
                                     rol = empleado.rol,
                                     activo = empleado.activo,
                                     joinedAt = empleado.joinedAt

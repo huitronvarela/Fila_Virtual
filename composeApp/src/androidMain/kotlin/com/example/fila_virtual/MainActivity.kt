@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -20,9 +23,13 @@ class MainActivity : ComponentActivity() {
     private lateinit var googleSignInClient: GoogleSignInClient
     private val RC_SIGN_IN = 9001
     private val firebaseAuth = FirebaseAuth.getInstance()
+    private var invitationToken by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        invitationToken = savedInstanceState?.getString("invitation_token")
+            ?: intent.getStringExtra("invitation_token")
+            ?: intent.data?.getQueryParameter("token")
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken("385041919843-v9f3p7kntedtho0612ivkvcdgjsse0jh.apps.googleusercontent.com")
@@ -37,9 +44,21 @@ class MainActivity : ComponentActivity() {
 
             App(
                 onGoogleSignIn = { startGoogleSignIn() },
-                onSignOut = { signOut() }
+                onSignOut = { signOut() },
+                invitationToken = invitationToken
             )
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        invitationToken = intent.getStringExtra("invitation_token")
+            ?: intent.data?.getQueryParameter("token")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("invitation_token", invitationToken)
+        super.onSaveInstanceState(outState)
     }
 
     private fun startGoogleSignIn() {

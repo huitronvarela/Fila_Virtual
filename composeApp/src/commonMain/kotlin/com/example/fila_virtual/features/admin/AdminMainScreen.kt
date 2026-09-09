@@ -126,7 +126,8 @@ fun AdminMainScreen(
                     1 -> ScreenEmpleados(
                         establecimientoId = selectedEstablecimientoId,
                         ownerUid = usuario.uid,
-                        onNavigateToAdd = {
+                        onNavigateToAdd = { establecimientoId ->
+                            selectedEstablecimientoId = establecimientoId
                             isAddingEmployee = true
                         },
                         onEditEmpleado = { emp ->

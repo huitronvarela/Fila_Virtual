@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,13 +34,15 @@ import com.example.fila_virtual.data.Empleado
 import com.example.fila_virtual.features.admin.FormState
 
 import com.example.fila_virtual.features.admin.EstablecimientoViewModel
+import io.kamel.image.KamelImage
+import io.kamel.image.asyncPainterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenEmpleados(
     establecimientoId: String,
     ownerUid: String,
-    onNavigateToAdd: () -> Unit,
+    onNavigateToAdd: (String) -> Unit,
     onEditEmpleado: (EmpleadoDetalle) -> Unit,
     viewModel: EmpleadoViewModel = viewModel(),
     establecimientoViewModel: EstablecimientoViewModel = viewModel()
@@ -88,9 +91,20 @@ fun ScreenEmpleados(
     Scaffold(
         containerColor = LightBackground,
         floatingActionButton = {
-            if (currentEstablecimientoId != "TODOS" && currentEstablecimientoId.isNotEmpty()) {
+            val canAddEmployee = currentEstablecimientoId.isNotEmpty() &&
+                (currentEstablecimientoId != "TODOS" || establecimientos.isNotEmpty())
+            if (canAddEmployee) {
                 FloatingActionButton(
-                    onClick = onNavigateToAdd,
+                    onClick = {
+                        val targetEstablecimientoId = if (currentEstablecimientoId == "TODOS") {
+                            establecimientos.firstOrNull()?.id.orEmpty()
+                        } else {
+                            currentEstablecimientoId
+                        }
+                        if (targetEstablecimientoId.isNotEmpty()) {
+                            onNavigateToAdd(targetEstablecimientoId)
+                        }
+                    },
                     containerColor = PrimaryOrange,
                     contentColor = Color.White,
                     shape = RoundedCornerShape(16.dp)
@@ -316,15 +330,11 @@ fun ScreenEmpleados(
                 ) {
                     // Profile avatar
                     Box(modifier = Modifier.size(100.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .background(LightGray),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = MediumGray, modifier = Modifier.size(50.dp))
-                        }
+                        EmployeeAvatar(
+                            fotoUrl = emp.fotoUrl,
+                            modifier = Modifier.fillMaxSize(),
+                            iconSize = 50.dp
+                        )
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
@@ -487,19 +497,11 @@ fun CardEmpleado(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(modifier = Modifier.size(56.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(LightGray),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MediumGray
-                    )
-                }
+                EmployeeAvatar(
+                    fotoUrl = empleado.fotoUrl,
+                    modifier = Modifier.size(56.dp),
+                    iconSize = 28.dp
+                )
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -555,6 +557,34 @@ fun CardEmpleado(
                 modifier = Modifier
                     .size(24.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun EmployeeAvatar(
+    fotoUrl: String,
+    modifier: Modifier,
+    iconSize: androidx.compose.ui.unit.Dp
+) {
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(LightGray),
+        contentAlignment = Alignment.Center
+    ) {
+        if (fotoUrl.isNotBlank()) {
+            KamelImage(
+                resource = asyncPainterResource(fotoUrl),
+                contentDescription = "Foto de perfil",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                onFailure = {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = MediumGray, modifier = Modifier.size(iconSize))
+                }
+            )
+        } else {
+            Icon(Icons.Default.Person, contentDescription = null, tint = MediumGray, modifier = Modifier.size(iconSize))
         }
     }
 }

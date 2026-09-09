@@ -13,6 +13,7 @@ data class Empleado(
     val uid: String = "",
     val rol: String = "empleado",
     val activo: Boolean = true,
+    val invitacionToken: String = "",
     val joinedAt: Long = 0L,
     val updatedAt: Long = 0L
 )

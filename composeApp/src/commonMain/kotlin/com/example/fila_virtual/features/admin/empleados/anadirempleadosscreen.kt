@@ -22,6 +22,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,6 +58,8 @@ fun AnadirEmpleadoScreen(
     var correo by remember { mutableStateOf(empleado?.correo ?: "") }
     var rol by remember { mutableStateOf(empleado?.rol ?: "cajero") }
     var localError by remember { mutableStateOf("") }
+    var invitationToken by remember { mutableStateOf("") }
+    val clipboardManager = LocalClipboardManager.current
     
     val establecimientos by establecimientoViewModel.establecimientos.collectAsState()
     
@@ -73,7 +77,7 @@ fun AnadirEmpleadoScreen(
     }
 
     LaunchedEffect(uiState) {
-        if (uiState is FormState.Success) {
+        if (uiState is FormState.Success && isEditing) {
             viewModel.resetState()
             onNavigateBack()
         }
@@ -91,12 +95,21 @@ fun AnadirEmpleadoScreen(
             }
             localError = ""
             focusManager.clearFocus()
-            viewModel.guardarEmpleadoPorCorreo(
-                correoBusqueda = correo,
-                rol = rol,
-                establecimientoId = selectedEstablecimientoId,
-                onSuccess = onNavigateBack
-            )
+            if (isEditing) {
+                viewModel.guardarEmpleadoPorCorreo(
+                    correoBusqueda = correo,
+                    rol = rol,
+                    establecimientoId = selectedEstablecimientoId,
+                    onSuccess = onNavigateBack
+                )
+            } else {
+                viewModel.enviarInvitacionPorCorreo(
+                    correo = correo,
+                    rol = rol,
+                    establecimientoId = selectedEstablecimientoId,
+                    onSent = { invitationToken = it }
+                )
+            }
         }
     ) {
         if (!isEditing) {
@@ -111,6 +124,41 @@ fun AnadirEmpleadoScreen(
                     .background(SoftOrangeBg, RoundedCornerShape(8.dp))
                     .padding(12.dp)
             )
+            if (invitationToken.isNotEmpty()) {
+                Surface(
+                    color = SoftOrangeBg,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Invitación enviada", fontWeight = FontWeight.Bold, color = DarkGray)
+                        Text(
+                            text = invitationToken,
+                            color = PrimaryOrange,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                        OutlinedButton(
+                            onClick = { clipboardManager.setText(AnnotatedString(invitationToken)) }
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Copiar código")
+                        }
+                        Text(
+                            "También se envió al correo. Caduca en 24 horas.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MediumGray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
         } else {
             Text(
                 text = "Editando el rol de: ${empleado?.nombre}",
